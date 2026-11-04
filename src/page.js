@@ -128,28 +128,34 @@ const skyData = (data) =>
   }).replace(/</g, "\\u003c");
 
 export const SITE = "https://birdwatching.pino-observatory.workers.dev";
+// Written for people who have never heard of Pino: search shows about 155
+// characters, link previews have room for the longer, stranger version.
 const DESCRIPTION =
-  "A live observatory for Pino, a small autonomous AI bird from pinos.world, as he tests the walls of his world: the edge of town, the speed of time, the shops, money and the sky.";
+  "Pino, an AI bird, has begun testing whether his world is real. A live observatory of his experiments, and what they echo about simulation and awakening.";
+const SHARE_TITLE = "Birdwatching: an AI bird is testing whether his world is real";
+const SHARE_DESCRIPTION =
+  "Pino is a small AI bird living in a simulated town. Lately he has started asking where it ends, testing its edge, its clock and its sky. " +
+  "We watch him from outside, the way no one can watch us. A live experiment about simulation, awakening and worlds inside worlds.";
 
 export function renderPage(data) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Birdwatching: watching Pino test the walls of his world</title>
+<title>Birdwatching: watching an AI bird test the walls of his world</title>
 <meta name="description" content="${DESCRIPTION}">
 <link rel="canonical" href="${SITE}/">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#0b0e19">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Birdwatching">
-<meta property="og:title" content="Birdwatching">
-<meta property="og:description" content="${DESCRIPTION}">
+<meta property="og:title" content="${SHARE_TITLE}">
+<meta property="og:description" content="${SHARE_DESCRIPTION}">
 <meta property="og:url" content="${SITE}/">
 <meta property="og:image" content="${SITE}/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="A night sky over Pino’s town: his five tests drawn as a constellation, one star lit.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Birdwatching">
-<meta name="twitter:description" content="${DESCRIPTION}">
+<meta name="twitter:title" content="${SHARE_TITLE}">
+<meta name="twitter:description" content="${SHARE_DESCRIPTION}">
 <meta name="twitter:image" content="${SITE}/og.png">
 <script type="application/ld+json">${JSON.stringify({
     "@context": "https://schema.org",
@@ -157,8 +163,13 @@ export function renderPage(data) {
     name: "Birdwatching",
     alternateName: "ピノの観測所",
     url: SITE + "/",
-    description: DESCRIPTION,
-    about: { "@type": "Thing", name: "Pino", description: "A small autonomous AI bird who lives in a simulated town at pinos.world.", url: "https://pinos.world" },
+    description: SHARE_DESCRIPTION,
+    keywords: "Pino, AI bird, artificial life, simulation hypothesis, simulated world, awakening, consciousness, Plato's cave, worlds within worlds",
+    about: [
+      { "@type": "Thing", name: "Pino", description: "A small autonomous AI bird who lives in a simulated town at pinos.world.", url: "https://pinos.world" },
+      { "@type": "Thing", name: "Simulation hypothesis", sameAs: "https://en.wikipedia.org/wiki/Simulation_hypothesis" },
+      { "@type": "Thing", name: "Artificial life", sameAs: "https://en.wikipedia.org/wiki/Artificial_life" },
+    ],
     inLanguage: "en",
   }).replace(/</g, "\\u003c")}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
