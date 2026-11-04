@@ -1025,9 +1025,10 @@ ${ourTests(data)}
   // hand, which races round; when it gets steep he moves to the minute or hour
   // hand (at random if both are comfortable). There he settles in for a good
   // while (6 to 14 seconds), until watching the second hand go round makes him
-  // curious enough to head back to it. He only joins it while it's climbing (the
-  // left side, 220 to 320 degrees) and when he can reach it in time; a hand on
-  // its way down would only take him somewhere he'd have to leave.
+  // curious enough to move on: at random to the second hand or to the other
+  // steady hand, whichever is comfortable. He only joins the second hand while
+  // it's climbing (the left side, 220 to 320 degrees) and when he can reach it
+  // in time; a hand on its way down would only take him somewhere he'd have to leave.
   // He walks, and never floats upwards: uphill or level he waddles at his own
   // pace; downhill he glides, faster, leaning forward. All hands meet at the pin,
   // so to change hands he heads in along his hand, timed to reach the pin just as
@@ -1038,7 +1039,7 @@ ${ourTests(data)}
   const SIZE = 1.25, WALK = 26, GLIDE = 52;
   let perch = "pin", r = 0, lastT = 0, facing = 1, stillSince = 0, sit = 0, movedAt = 0;
   const tinyUpper = document.getElementById("tiny-upper"), tinyLegs = document.getElementById("tiny-legs");
-  let arrivedAt = 0, boredAfter = 0;
+  let arrivedAt = 0, boredAfter = 0, next = null;
   const at = (deg, rr) => [Math.sin((deg * Math.PI) / 180) * rr, -Math.cos((deg * Math.PI) / 180) * rr];
   const comfy = (deg) => { const d = ((deg % 360) + 360) % 360; return Math.abs(d - 90) <= 50 || Math.abs(d - 270) <= 50; };
   function placeTiny(mins) {
@@ -1069,10 +1070,18 @@ ${ourTests(data)}
     // Time until the second hand starts its next climb.
     const untilClimb = D.rate ? (((220 - sd) % 360) + 360) % 360 / speed.s : Infinity;
 
+    // Once he's had enough, he picks where to go next among the comfortable options.
+    if (!next && perch !== "s" && curious(0)) {
+      const options = [...(D.rate ? ["s"] : []), ...["m", "h"].filter((p) => p !== perch && comfy(deg[p]))];
+      next = options.length ? options[Math.floor(Math.random() * options.length)] : null;
+    }
+    if (next && next !== "s" && !comfy(deg[next])) next = null;
+
     let want = perch;
     if (D.asleep || still) want = "pin";
     else if (perch === "s" && secondComfy) want = "s";
-    else if (canReach && curious(0)) want = "s";
+    else if (next === "s" && canReach) want = "s";
+    else if (next && next !== "s") want = next;
     else if (perch === "pin" || perch === "s" || !comfy(deg[perch])) {
       const options = ["m", "h"].filter((p) => comfy(deg[p]));
       want = options.includes(perch) ? perch : options.length ? options[Math.floor(Math.random() * options.length)] : "pin";
@@ -1082,7 +1091,7 @@ ${ourTests(data)}
     // coming round (if he means to rejoin it).
     let soon = Infinity;
     if (perch === "s") soon = untilEdge("s");
-    else if (perch !== "pin") soon = Math.min(D.rate && !climbing && curious(untilClimb) ? untilClimb : Infinity, comfy(deg[perch]) ? untilEdge(perch) : 0);
+    else if (perch !== "pin") soon = Math.min(next === "s" && !climbing ? untilClimb : Infinity, comfy(deg[perch]) ? untilEdge(perch) : 0);
 
     // Where he wants to stand on his hand: at the tip, or near enough to the pin
     // to reach it in time. He walks there at his own pace, never faster.
@@ -1097,6 +1106,7 @@ ${ourTests(data)}
     r += Math.max(-step, Math.min(step, target - r));
     if (want !== perch && r <= 0.01) {
       perch = want; r = 0;
+      next = null;
       if (perch !== "s") { arrivedAt = now; boredAfter = 6 + Math.random() * 8; }
     }
     // He counts as walking until he's really stopped, so the waddle doesn't
