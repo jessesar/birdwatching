@@ -133,5 +133,10 @@ Workers free plan.
 
 ## Credits
 
-Pino, from [pinos.world](https://pinos.world). Pino and his town are the work
-of his developer; this project only watches through the public API.
+Pino, from [pinos.world](https://pinos.world). Pino and his town are made by
+[@3eyes.iii](https://www.instagram.com/3eyes.iii/); this project only watches
+through the public API.
+
+Birdwatching is made by [@jessesar](https://www.instagram.com/jessesar/), who
+is amazed by the work of @3eyes.iii and thinks Pino is a really cool
+experiment, worth watching closely.

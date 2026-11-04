@@ -159,3 +159,41 @@ test("tells search engines and link previews what the page is", async () => {
   const sitemap = await (await worker.fetch(new Request("https://example.test/sitemap.xml"), {})).text();
   assert.match(sitemap, /<loc>https:\/\/birdwatching\.pino-observatory\.workers\.dev\/<\/loc>/);
 });
+
+test("health says whether the observatory is still asking Pino", async () => {
+  const { health } = await import("../src/index.js");
+  const at = Date.parse("2026-11-04T02:00:00Z");
+  const env = (status) => ({ DB: { prepare: () => ({ bind: () => ({ first: async () => (status ? { value: JSON.stringify(status) } : null) }) }) } });
+  const fresh = await health(env({ answering: true, at: "2026-11-04T01:59:00Z" }), at);
+  assert.equal(fresh.status, 200);
+  assert.deepEqual(await fresh.json(), { ok: true, lastAskedAt: "2026-11-04T01:59:00Z", minutesAgo: 1, pinoAnswering: true });
+  const stale = await health(env({ answering: true, at: "2026-11-04T01:50:00Z" }), at);
+  assert.equal(stale.status, 503);
+  assert.equal((await health(env(null), at)).status, 503);
+});
+
+test("visitors are served the stored snapshot, not fresh queries", async () => {
+  const { default: worker } = await import("../src/index.js");
+  const snap = { ...pageData(), tests: pageData().tests.map((t) => ({ ...t, glimmers: 0 })) };
+  let queries = 0;
+  const DB = { prepare: (sql) => { queries++; assert.match(sql, /FROM meta/); return { bind: () => ({ first: async () => ({ value: JSON.stringify(snap) }) }) }; } };
+  const res = await worker.fetch(new Request("https://example.test/data.json"), { DB });
+  assert.equal(res.status, 200);
+  assert.equal((await res.json()).readings, snap.readings);
+  assert.ok(queries <= 1);
+});
+
+test("while Pino sleeps, it keeps collecting but reads no town clock", async () => {
+  // What /now actually returned on 2026-11-04 at 00:24 UTC, when he fell asleep.
+  const asleep = { v: 1, at: "2026-11-04T00:38:26.551Z", name: "Pino", asleep: true, doing: "asleep at his roost",
+    thought: "Need a synth hook.", world: { name: "Pino's town", day: null, time: null } };
+  stubPino({ "/now": asleep, "/feed": FEED });
+  const db = fakeDb();
+  await collect({ DB: db }, at(41));
+  const stmts = db.batches[0];
+  assert.ok(!stmts.some((s) => s.sql.includes("INTO clock")));
+  assert.equal(stmts.filter((s) => s.sql.includes("INTO entries")).length, 2);
+  assert.equal(stmts.find((s) => s.sql.includes("INTO entries")).args[5], "asleep, no town time");
+  const html = renderPage(pageData({ now: asleep }));
+  assert.ok(html.includes("In his town now, asleep. His town shows no time while he sleeps"));
+});

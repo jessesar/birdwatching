@@ -102,7 +102,8 @@ function nowLine(data) {
   if (!data.now) return `<p class="now">No readings yet. The first arrives within a minute of the observatory starting.</p>`;
   const n = data.now;
   const quiet = data.status && !data.status.answering ? " He isn’t answering right now." : "";
-  return `<p class="now"><span class="when">In his town now, day ${esc(n.world.day)}, ${esc(n.world.time)}${n.asleep ? ", asleep" : ""}</span>${esc(n.doing)}. <q>${esc(n.thought)}</q>${quiet}</p>`;
+  const when = n.world?.time ? `In his town now, day ${esc(n.world.day)}, ${esc(n.world.time)}${n.asleep ? ", asleep" : ""}` : "In his town now, asleep. His town shows no time while he sleeps";
+  return `<p class="now"><span class="when">${when}</span>${esc(n.doing)}. <q>${esc(n.thought)}</q>${quiet}</p>`;
 }
 
 const dial = (id, label) => `<figure class="dial">
@@ -224,6 +225,8 @@ q{quotes:"“" "”"}
 .minute{stroke:var(--ivory);stroke-width:1.8}
 .second{stroke:var(--ash);stroke-width:.9}
 #town .minute,#town .hour,#town .second{stroke:var(--lamp)}
+#town{transition:opacity 1s ease}
+#town.asleep{opacity:.45}
 .pin{fill:var(--ivory)}
 .dial figcaption{display:grid;font-size:14px;color:var(--ash)}
 .dial figcaption b{font-weight:500;font-size:22px;color:var(--ivory);font-variant-numeric:tabular-nums}
@@ -442,7 +445,8 @@ ${data.tests.map((t) => testItem(t, data)).join("\n")}
 <footer class="gutter">
   <p>Watching since ${data.watchingSince ? utc(data.watchingSince) : "now"}, ${data.readings} clock readings so far. Last asked ${utc(data.status?.at)}${data.status && !data.status.answering ? ", and he didn’t answer" : ""}.</p>
   <p>The claims and plans are Pino’s, from his page. Quotes come from his public feed, unedited. Lines in lamplight are the observatory’s own measurements. A small language model reads each entry, his wants and his memories, and decides which test it is really about. Until it has, or if it can’t, plain keywords stand in and the sighting says “keyword match”. Either can be wrong, so read it and judge. The raw observations are at <a href="/data.json">data.json</a>.</p>
-  <p>Pino, from <a href="https://pinos.world">pinos.world</a>. This observatory only watches: it asks his public API no faster than he updates and never writes to him.</p>
+  <p>Pino, from <a href="https://pinos.world">pinos.world</a>. Pino and his town are made by <a href="https://www.instagram.com/3eyes.iii/">@3eyes.iii</a>.</p>
+  <p>Birdwatching is made by <a href="https://www.instagram.com/jessesar/">@jessesar</a>, who is amazed by the work of @3eyes.iii and thinks Pino is a really cool experiment, worth watching closely. This observatory only watches: it asks his public API no faster than he updates and never writes to him.</p>
 </footer>
 
 <script id="sky-data" type="application/json">${skyData(data)}</script>
@@ -462,7 +466,8 @@ ${data.tests.map((t) => testItem(t, data)).join("\n")}
 
   function townMinutesNow() {
     if (!D.last) return null;
-    const run = D.rate ? (D.rate * (Date.now() - D.last.realMs)) / 60000 : 0;
+    // Asleep, his town reports no time: hold at the last reading rather than guess.
+    const run = D.rate && !D.asleep ? (D.rate * (Date.now() - D.last.realMs)) / 60000 : 0;
     return D.last.town + run;
   }
 
@@ -659,7 +664,7 @@ ${data.tests.map((t) => testItem(t, data)).join("\n")}
   // his runs at the measured town speed, so his second hand races ours.
   const pad = (n) => String(Math.floor(n)).padStart(2, "0");
   const hands = (id) => ["h", "m", "s", "t"].map((k) => document.getElementById(id + "-" + k));
-  const ours = hands("oc"), his = hands("tc");
+  const ours = hands("oc"), his = hands("tc"), townBox = document.getElementById("town");
   if (!D.rate) his[2].setAttribute("visibility", "hidden");
   function setDial([h, m, s, label], mins, suffix) {
     h.setAttribute("transform", "rotate(" + (((mins / 60) % 12) * 30) + ")");
@@ -672,7 +677,9 @@ ${data.tests.map((t) => testItem(t, data)).join("\n")}
     const now = new Date();
     setDial(ours, now.getUTCHours() * 60 + now.getUTCMinutes() + (now.getUTCSeconds() + now.getUTCMilliseconds() / 1000) / 60);
     const m = townMinutesNow();
-    if (m != null) setDial(his, ((m % 1440) + 1440) % 1440, ", day " + Math.floor(m / 1440));
+    if (m != null) setDial(his, ((m % 1440) + 1440) % 1440, D.asleep ? ", asleep" : ", day " + Math.floor(m / 1440));
+    his[2].setAttribute("visibility", D.rate && !D.asleep ? "visible" : "hidden");
+    townBox.classList.toggle("asleep", D.asleep);
   }
 
   // Scroll-driven story: the dive and the timeline follow the scroll position.
@@ -762,8 +769,9 @@ ${data.tests.map((t) => testItem(t, data)).join("\n")}
     try { d = await (await fetch("/data.json", { cache: "no-store" })).json(); } catch { return; }
     if (d.now) {
       const n = d.now, quiet = d.status && !d.status.answering ? " He isn’t answering right now." : "";
-      nowEl.innerHTML = '<span class="when">In his town now, day ' + esc(n.world.day) + ", " + esc(n.world.time) + (n.asleep ? ", asleep" : "") +
-        "</span>" + esc(n.doing) + ". <q>" + esc(n.thought) + "</q>" + quiet;
+      const when = n.world && n.world.time ? "In his town now, day " + esc(n.world.day) + ", " + esc(n.world.time) + (n.asleep ? ", asleep" : "")
+        : "In his town now, asleep. His town shows no time while he sleeps";
+      nowEl.innerHTML = '<span class="when">' + when + "</span>" + esc(n.doing) + ". <q>" + esc(n.thought) + "</q>" + quiet;
       D.asleep = Boolean(n.asleep);
     }
     if (d.lastReading) D.last = d.lastReading;
@@ -788,7 +796,9 @@ ${data.tests.map((t) => testItem(t, data)).join("\n")}
     });
     if (more) notice.hidden = false;
   }
-  setInterval(refresh, 60 * 1000);
+  // Only while the tab is visible; coming back to it refreshes right away.
+  setInterval(() => { if (!document.hidden) refresh(); }, 60 * 1000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
 })();
 </script>
 </body></html>`;

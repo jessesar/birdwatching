@@ -39,14 +39,18 @@ export async function collect(env, when = Date.now()) {
     return;
   }
 
-  const town = `day ${now.world.day}, ${now.world.time}`;
+  // While he sleeps his town reports no day and no time; there's no clock to read then.
+  const clockReadable = now.world?.day != null && typeof now.world?.time === "string";
+  const town = clockReadable ? `day ${now.world.day}, ${now.world.time}` : "asleep, no town time";
   const writes = [
     setMeta(env, "status", { answering: true, at: seenAt }),
     setMeta(env, "now", now),
-    env.DB.prepare(
-      "INSERT OR IGNORE INTO clock (at, real_ms, town_day, town_time, town_min, asleep, doing) VALUES (?, ?, ?, ?, ?, ?, ?)"
-    ).bind(now.at, Date.parse(now.at), now.world.day, now.world.time, townMinutes(now.world.day, now.world.time), now.asleep ? 1 : 0, now.doing ?? null),
   ];
+  if (clockReadable) {
+    writes.push(env.DB.prepare(
+      "INSERT OR IGNORE INTO clock (at, real_ms, town_day, town_time, town_min, asleep, doing) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    ).bind(now.at, Date.parse(now.at), now.world.day, now.world.time, townMinutes(now.world.day, now.world.time), now.asleep ? 1 : 0, now.doing ?? null));
+  }
 
   // The clock reading above is kept even if the feed or memories fail.
   try {
@@ -164,12 +168,13 @@ const readMeta = async (env, key) => {
 
 export async function observations(env, at = Date.now()) {
   const db = env.DB;
-  const [clockRows, watching, now, status] = await Promise.all([
+  const [clockRows, watching, now, status, latest] = await Promise.all([
     db.prepare("SELECT real_ms, town_min FROM clock WHERE at >= ? ORDER BY at")
       .bind(new Date(at - CLOCK_WINDOW_MS).toISOString()).all(),
     db.prepare("SELECT MIN(at) AS since, COUNT(*) AS readings FROM clock").first(),
     readMeta(env, "now"),
     readMeta(env, "status"),
+    db.prepare("SELECT real_ms, town_min FROM clock ORDER BY at DESC LIMIT 1").first(),
   ]);
 
   const clock = clockRate(clockRows.results.map((r) => ({ realMs: r.real_ms, town: r.town_min })));
@@ -210,10 +215,40 @@ export async function observations(env, at = Date.now()) {
     now,
     // summary: the Time test's sentence, so an open page can update it live.
     clock: measured && { ...measured, summary: timeFinding(measured) },
-    lastReading: now && { realMs: Date.parse(now.at), town: townMinutes(now.world.day, now.world.time) },
+    // The last time his town clock could be read (not while he sleeps).
+    lastReading: latest && { realMs: latest.real_ms, town: latest.town_min },
     realMoon: moon(at),
     tests,
   };
+}
+
+// The page's data is built once a minute by the cron and stored as a single row,
+// so a visit costs one read however many people are watching. Each Worker
+// instance also keeps it for a few seconds.
+const SNAPSHOT_TTL_MS = 15 * 1000;
+let cached = null;
+
+export async function snapshot(env, when = Date.now()) {
+  await setMeta(env, "snapshot", await observations(env, when)).run();
+}
+
+async function current(env) {
+  if (cached && Date.now() - cached.t < SNAPSHOT_TTL_MS) return cached.data;
+  const data = (await readMeta(env, "snapshot")) ?? (await observations(env));
+  cached = { t: Date.now(), data };
+  return data;
+}
+
+// For uptime monitors: 200 while the observatory is collecting, 503 when it
+// hasn't asked Pino anything for five minutes.
+export async function health(env, at = Date.now()) {
+  const status = await readMeta(env, "status");
+  const minutesAgo = status ? (at - Date.parse(status.at)) / 60000 : Infinity;
+  const ok = minutesAgo < 5;
+  return Response.json(
+    { ok, lastAskedAt: status?.at ?? null, minutesAgo: Number.isFinite(minutesAgo) ? Math.round(minutesAgo) : null, pinoAnswering: status?.answering ?? null },
+    { status: ok ? 200 : 503, headers: { "cache-control": "no-store" } }
+  );
 }
 
 export default {
@@ -221,8 +256,13 @@ export default {
     const when = controller.scheduledTime;
     ctx.waitUntil(
       (async () => {
-        await collect(env, when);
-        if (new Date(when).getUTCMinutes() % 5 === 0) await judge(env, when);
+        try {
+          await collect(env, when);
+          if (new Date(when).getUTCMinutes() % 5 === 0) await judge(env, when);
+        } finally {
+          // Even after a failed run, refresh what visitors see.
+          await snapshot(env, when);
+        }
       })().catch((err) => console.error("collect failed", err))
     );
   },
@@ -235,9 +275,10 @@ export default {
         `<url><loc>${SITE}/</loc><changefreq>hourly</changefreq></url></urlset>\n`;
       return new Response(xml, { headers: { "content-type": "application/xml" } });
     }
+    if (pathname === "/health") return health(env);
     if (pathname !== "/" && pathname !== "/data.json") return new Response("Not here.", { status: 404 });
 
-    const data = await observations(env);
+    const data = await current(env);
     const headers = { "cache-control": "public, max-age=30" };
     if (pathname === "/data.json") {
       return Response.json(data, { headers: { ...headers, "access-control-allow-origin": "*" } });
