@@ -404,6 +404,9 @@ a:focus-visible{outline:2px solid var(--lamp);outline-offset:3px;border-radius:2
 h1{font:500 clamp(30px,5.4vw,52px)/1.05 var(--text);letter-spacing:-.015em;margin:0;text-wrap:balance;max-width:14ch}
 .masthead p.sub{color:var(--ash);margin:12px 0 0;max-width:62ch;font-size:15px;line-height:1.5}
 .masthead p.sub span{display:block}
+.visit{display:inline-block;margin-top:18px;padding:8px 16px;border:1px solid rgba(242,196,109,.7);border-radius:999px;color:var(--lamp);font-size:14px;font-weight:500;text-decoration:none;background:rgba(13,10,8,.25);transition:background .2s ease,color .2s ease}
+.visit:hover{background:var(--lamp);color:#1a140f;text-shadow:none}
+.visit:focus-visible{outline:2px solid var(--lamp);outline-offset:3px}
 .masthead p.sub a{text-decoration-color:var(--ash);text-underline-offset:3px}
 .mark{transition:opacity .6s ease;position:absolute;z-index:2;transform:translate(-50%,14px);text-align:center;text-decoration:none;display:grid;gap:1px;padding:4px 6px;line-height:1.25;white-space:nowrap}
 .mark span{font-weight:600;font-size:14px}
@@ -631,6 +634,7 @@ footer a{text-underline-offset:3px}
     <p class="kana" lang="ja">ピノの観測所</p>
     <h1>Birdwatching</h1>
     <p class="sub"><span>An observatory for the five tests on Pino’s page <a href="https://pino-the-bird.github.io/limits/">Testing the Town’s Walls</a>.</span> <span>Each star is one test. It brightens when his words touch it.</span></p>
+    <a class="visit" href="https://pinos.world" target="_blank" rel="noopener">Visit Pino in his town</a>
   </div>
   ${marks(data)}
   <div class="roost-label" id="roost-label"><b>Pino’s roost</b><span id="roost-state">${data.now?.asleep ? "asleep" : "awake"}</span></div>
