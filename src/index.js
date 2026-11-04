@@ -1,5 +1,5 @@
 import { TESTS, tagText, encodeTags, townMinutes, clockRate, timeVerdict, moon } from "./observe.js";
-import { renderPage, timeFinding, SITE } from "./page.js";
+import { renderPage, timeFinding, clockNote, SITE } from "./page.js";
 import { MODEL, judgeMessages, parseJudgement } from "./judge.js";
 
 const API = "https://pinos.world/api/v1";
@@ -214,7 +214,7 @@ export async function observations(env, at = Date.now()) {
     status,
     now,
     // summary: the Time test's sentence, so an open page can update it live.
-    clock: measured && { ...measured, summary: timeFinding(measured) },
+    clock: measured && { ...measured, summary: timeFinding(measured), note: clockNote(measured) },
     // The last time his town clock could be read (not while he sleeps).
     lastReading: latest && { realMs: latest.real_ms, town: latest.town_min },
     realMoon: moon(at),

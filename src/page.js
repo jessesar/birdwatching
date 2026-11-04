@@ -38,6 +38,20 @@ const icon = (key) =>
 const seenText = (n, g = 0) =>
   n ? (n === 1 ? "seen once" : `seen ${n} times`) : g ? (g === 1 ? "a glimmer" : `${g} glimmers`) : "not yet seen";
 
+// The line under the clocks: the measured speed of his time, in human terms.
+export function clockNote(clock) {
+  if (!clock || clock.verdict.state === "measuring") {
+    return "His clock stands still at the last reading until we’ve timed it for half an hour. After that it runs here on its own, at his speed.";
+  }
+  const r = clock.rate;
+  if (Math.abs(r - 1) < 0.05) return "Time in Pino’s world runs at the same speed as ours.";
+  const word = r > 1 ? "faster" : "slower";
+  const factor = r > 1 ? r : 1 / r;
+  const hour = Math.round(60 / r);
+  const day = 24 / r;
+  return `Time runs ${factor.toFixed(1)} times ${word} in Pino’s world. One of his hours passes in ${hour} of our minutes; a whole day of his in about ${day < 10 ? day.toFixed(1).replace(/\.0$/, "") : Math.round(day)} of our hours.`;
+}
+
 export function timeFinding(clock) {
   if (!clock || clock.verdict.state === "measuring") {
     const so = clock ? ` (${duration(clock.realMinutes)} so far)` : "";
@@ -111,7 +125,7 @@ function marks(data) {
 }
 
 // How he feels (the town's own words) and what he needs right now, as thin bars.
-const NEEDS = [["rest", "rest"], ["curiosity", "curiosity"], ["social", "company"], ["expression", "to make something"], ["quiet", "quiet"]];
+const NEEDS = [["rest", "rest"], ["curiosity", "curiosity"], ["social", "company"], ["expression", "making"], ["quiet", "quiet"]];
 function feel(n) {
   const words = n?.feeling?.words;
   const needs = NEEDS.filter(([k]) => typeof n?.needs?.[k] === "number");
@@ -249,9 +263,9 @@ main{max-width:980px;margin:0 auto}
 .feeling{margin:0;font-size:15px;line-height:1.5;color:#cfc7bd}
 .feeling>span{font-size:12px;letter-spacing:.04em;color:var(--lamp);margin-right:4px}
 .needs-title{margin:6px 0 0;font-size:12px;letter-spacing:.04em;color:var(--lamp)}
-ul.needs{list-style:none;margin:0;padding:0;display:grid;gap:7px;max-width:340px}
-ul.needs li{display:grid;grid-template-columns:132px 1fr;align-items:center;gap:12px;font-size:13px;color:var(--ash)}
-ul.needs i{display:block;height:4px;border-radius:2px;background:rgba(243,239,233,.1);overflow:hidden}
+ul.needs{list-style:none;margin:0;padding:0;display:flex;flex-wrap:nowrap;gap:16px}
+ul.needs li{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ash);white-space:nowrap}
+ul.needs i{display:block;width:30px;height:3px;border-radius:2px;background:rgba(243,239,233,.12);overflow:hidden}
 ul.needs b{display:block;height:100%;border-radius:2px;background:linear-gradient(90deg,rgba(242,196,109,.55),var(--lamp));transition:width 1.2s ease}
 .when{display:block;color:var(--ash);font-size:14px;font-variant-numeric:tabular-nums}
 q{quotes:"“" "”"}
@@ -381,6 +395,7 @@ footer a{text-underline-offset:3px}
 }
 @media (prefers-reduced-motion:reduce){.roost-glow{animation:none}.test:hover .test-icon *{animation:none!important}}
 @media (max-width:560px){
+  ul.needs{flex-wrap:wrap;gap:8px 14px}
   body{font-size:16px}
   .mark span{font-size:13px}.mark small{display:none}
 }
@@ -420,7 +435,7 @@ footer a{text-underline-offset:3px}
       <div id="town">${dial("tc", "His town clock")}</div>
       <div id="ours">${dial("oc", "Our clock, UTC")}</div>
     </div>
-    <p class="note">${data.clock && data.clock.verdict.state !== "measuring" ? "His clock runs here at the speed we measured, counted on from the last reading." : "His clock stands still at the last reading until we’ve timed it for half an hour. After that it runs here on its own, at his speed."}</p>
+    <p class="note">${esc(clockNote(data.clock))}</p>
     </div>
   </div>
 </section>
@@ -668,9 +683,11 @@ ${data.tests.map((t) => testItem(t, data)).join("\n")}
   }
 
   function skyline() {
-    const ground = H * 0.97, cx = W / 2;
+    const ground = H * 0.97, cx = W / 2, roostX = cx + 19 + 46;
     ctx.fillStyle = "#0d0a08";
     for (const b of town) {
+      // His roost stands on the ground in a gap of its own.
+      if (b.x < roostX + 26 && b.x + b.w > roostX - 26) continue;
       ctx.beginPath();
       ctx.moveTo(b.x, ground); ctx.lineTo(b.x, ground - b.h);
       if (b.gable) ctx.lineTo(b.x + b.w / 2, ground - b.h - 12);
@@ -694,21 +711,24 @@ ${data.tests.map((t) => testItem(t, data)).join("\n")}
       hand(((mins / 60) % 12) / 12 * 6.283, 7, 2.2);
       hand((mins % 60) / 60 * 6.283, 10.5, 1.4);
     }
-    roost(cx + tw / 2 + 46, ground);
+    roost(roostX, ground);
   }
 
-  // Pino's roost: a birdhouse on a pole beside the tower. Its round window glows
-  // while he's awake; asleep it goes dark and z's drift up from it.
+  // Pino's roost: a small birdhouse on the ground beside the tower. Its round
+  // window glows while he's awake; asleep it goes dark and z's drift up from it.
   let roostAt = null;
   function roost(x, ground) {
-    const poleTop = ground - 46, bw = 24, bh = 20, top = poleTop - bh;
+    const bw = 30, bh = 26, top = ground - bh;
     ctx.fillStyle = "#0d0a08";
-    ctx.fillRect(x - 1.5, poleTop, 3, ground - poleTop);
     ctx.fillRect(x - bw / 2, top, bw, bh);
-    ctx.beginPath(); ctx.moveTo(x - bw / 2 - 5, top + 1); ctx.lineTo(x, top - 14); ctx.lineTo(x + bw / 2 + 5, top + 1); ctx.fill();
-    ctx.fillRect(x - 5, top + bh - 4, 10, 2.5);
-    const hx = x, hy = top + bh / 2 - 1;
-    roostAt = { x: hx, y: top - 14 };
+    ctx.beginPath(); ctx.moveTo(x - bw / 2 - 6, top + 1); ctx.lineTo(x, top - 17); ctx.lineTo(x + bw / 2 + 6, top + 1); ctx.fill();
+    // A faint warm edge so the little house reads against the dark town.
+    ctx.strokeStyle = "rgba(242,196,109,0.28)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x - bw / 2, ground); ctx.lineTo(x - bw / 2, top + 1); ctx.lineTo(x - bw / 2 - 6, top + 1); ctx.lineTo(x, top - 17);
+    ctx.lineTo(x + bw / 2 + 6, top + 1); ctx.lineTo(x + bw / 2, top + 1); ctx.lineTo(x + bw / 2, ground); ctx.stroke();
+    ctx.fillStyle = "#0d0a08"; ctx.fillRect(x - 6, top + bh - 9, 12, 2.5);
+    const hx = x, hy = top + bh / 2 - 3;
+    roostAt = { x: hx, y: top - 17 };
     if (D.asleep) {
       ctx.fillStyle = "#2a221b"; ctx.beginPath(); ctx.arc(hx, hy, 4.5, 0, 6.283); ctx.fill();
       ctx.strokeStyle = "rgba(242,196,109,0.35)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(hx, hy, 4.5, 0, 6.283); ctx.stroke();
@@ -918,7 +938,7 @@ ${data.tests.map((t) => testItem(t, data)).join("\n")}
     const measured = d.clock && d.clock.verdict.state !== "measuring";
     D.rate = measured ? d.clock.rate : null;
     his[2].setAttribute("visibility", D.rate ? "visible" : "hidden");
-    if (measured) noteEl.textContent = "His clock runs here at the speed we measured, counted on from the last reading.";
+    if (d.clock?.note) noteEl.textContent = d.clock.note;
     const finding = document.getElementById("time-finding");
     if (finding && d.clock?.summary) finding.textContent = d.clock.summary;
     let more = false;
