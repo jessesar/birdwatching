@@ -443,9 +443,10 @@ q{quotes:"“" "”"}
 .second{stroke:var(--ash);stroke-width:.9}
 #town .minute,#town .hour,#town .second{stroke:var(--lamp)}
 #town{transition:opacity 1s ease}
-.tiny-pino .body{fill:var(--lamp)}
-.tiny-pino .line{fill:none;stroke:var(--lamp);stroke-width:.5;stroke-linecap:round;stroke-linejoin:round}
-.tiny-pino .eye-white{fill:#f3efe9}
+.tiny-pino{filter:drop-shadow(0 .8px 1.1px rgba(0,0,0,.75))}
+.tiny-pino .body{fill:#ece6f4}
+.tiny-pino .line{fill:none;stroke:#d9d0e8;stroke-width:.5;stroke-linecap:round;stroke-linejoin:round}
+.tiny-pino .eye-white{fill:#fff}
 .tiny-pino .eye{fill:#15110e}
 #town.asleep{opacity:.45}
 .pin{fill:var(--ivory)}
@@ -1060,8 +1061,9 @@ ${ourTests(data)}
   // still. With no comfortable hand he waits at the pin; asleep too.
   const tiny = document.getElementById("tiny-pino");
   const HANDS = { s: 48, m: 44, h: 28 };
-  const SIZE = 1.25, WALK = 26, GLIDE = 52;
+  const SIZE = 1.25, WALK = 26, GLIDE_ACC = 150, GLIDE_MAX = 110;
   let perch = "pin", r = 0, lastT = 0, facing = 1, stillSince = 0, sit = 0, movedAt = 0;
+  let v = 0, phase = 0, wobbleAt = -1e9;
   const tinyUpper = document.getElementById("tiny-upper"), tinyLegs = document.getElementById("tiny-legs");
   let arrivedAt = 0, boredAfter = 0, next = null;
   const at = (deg, rr) => [Math.sin((deg * Math.PI) / 180) * rr, -Math.cos((deg * Math.PI) / 180) * rr];
@@ -1117,17 +1119,39 @@ ${ourTests(data)}
     if (perch === "s") soon = untilEdge("s");
     else if (perch !== "pin") soon = Math.min(next === "s" && !climbing ? untilClimb : Infinity, comfy(deg[perch]) ? untilEdge(perch) : 0);
 
-    // Where he wants to stand on his hand: at the tip, or near enough to the pin
-    // to reach it in time. He walks there at his own pace, never faster.
-    let target = perch === "pin" ? 0 : Math.min(HANDS[perch] - 4, soon * WALK);
+    // How his hand slopes: 1 is vertical, 0 flat. Uphill or downhill depends on
+    // which way along it he goes (screen y grows downwards).
+    const rad = perch === "pin" ? 0 : (deg[perch] * Math.PI) / 180;
+    const steep = Math.abs(Math.cos(rad));
+    const tipR = perch === "pin" ? 0 : HANDS[perch] - 4;
+    const downhillFor = (dir) => perch !== "pin" && dir * -Math.cos(rad) > 0.05;
+    // Climbing is slower the steeper it is; sliding speeds up the steeper it is.
+    const climb = WALK * (1 - 0.6 * steep);
+    const pull = GLIDE_ACC * Math.max(0.25, steep);
+
+    // Where he wants to stand: at the tip, or heading in so as to reach the pin
+    // just as a move is due. A climb in starts early enough at his slow pace; a
+    // slide in starts when sliding from here takes just that long.
+    let target = tipR;
     if (want !== perch) target = 0;
-    // Downhill if moving along his hand takes him lower on the screen.
-    const handUp = perch === "pin" ? 0 : -Math.cos((deg[perch] * Math.PI) / 180);
-    const downhill = perch !== "pin" && Math.sign(target - r) * handUp > 0.05;
+    else if (perch !== "pin" && soon < Infinity) {
+      if (downhillFor(-1)) { if (soon <= Math.sqrt((2 * r) / pull) + 0.15) target = 0; }
+      else target = Math.min(tipR, soon * climb);
+    }
+    const dir = Math.sign(target - r);
+    const downhill = downhillFor(dir);
     // If he's sitting, he gets up before he moves.
     const needMove = Math.abs(target - r) > 0.01 || want !== perch;
-    const before = r, step = needMove && sit > 0.05 ? 0 : (downhill ? GLIDE : WALK) * dt;
-    r += Math.max(-step, Math.min(step, target - r));
+    const before = r;
+    if (!needMove || sit > 0.05) v = 0;
+    else if (downhill) v = Math.min(GLIDE_MAX, Math.abs(v) + pull * dt);
+    else v = climb;
+    const step = v * dt;
+    if (Math.abs(target - r) <= step) {
+      // Arriving: a slide ends abruptly, with a wobble.
+      if (downhill && v > 25) wobbleAt = now;
+      r = target; v = 0;
+    } else r += dir * step;
     if (want !== perch && r <= 0.01) {
       perch = want; r = 0;
       next = null;
@@ -1155,9 +1179,13 @@ ${ourTests(data)}
     if (tinyUpper) tinyUpper.setAttribute("transform", "translate(0 " + (2.2 * sit).toFixed(2) + ")");
     if (tinyLegs) tinyLegs.style.opacity = String(1 - sit);
 
-    // The waddle: rocking from foot to foot about his feet while he walks; a
-    // forward lean while he glides.
-    const waddle = gliding ? 12 * facing : walking ? Math.sin(now / 85) * 9 : 0;
+    // The waddle: rocking from foot to foot while he walks, slower and heavier on
+    // a steep climb; a forward lean while he slides; a dying wobble after a slide.
+    if (walking && !gliding) phase += dt * (v / WALK) * 11.8;
+    const sway = 9 * (1 + 0.5 * steep);
+    let waddle = gliding ? 12 * facing : walking ? Math.sin(phase) * sway : 0;
+    const since = now - wobbleAt;
+    if (since < 700) waddle += 14 * Math.exp(-since / 200) * Math.sin(since / 28);
     tiny.setAttribute("transform", "translate(" + x.toFixed(2) + " " + y.toFixed(2) + ") rotate(" + waddle.toFixed(1) + ") translate(0 " + (-4.4 * SIZE).toFixed(2) + ") scale(" + facing * SIZE + " " + SIZE + ")");
   }
 
