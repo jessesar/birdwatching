@@ -25,7 +25,7 @@ const byKeywords = (row) => (row.tagged_by === "keywords" ? ", keyword match" : 
 
 // Line drawings for the five tests, from his own world. Parts animate on hover.
 const ICONS = {
-  edges: `<path d="M3 34h28"/><g class="ico-move"><path d="M6 24.5c0-5 4-8.5 9-8.5 4 0 7 2.2 7.3 5.8.3 4.6-3.6 8.2-8.3 8.2C9.2 30 6 28 6 24.5z"/><path d="M21.6 19.8q5.2 1.6 7.6 7.2M12.5 30v4M16.5 30v4"/><circle cx="19.6" cy="19.4" r=".8" fill="currentColor"/></g><path d="M34 6v28" stroke-dasharray="2 3"/>`,
+  edges: `<path d="M3 34h28"/><g class="ico-move"><path d="M6 24.5c0-5 4-8.5 9-8.5 4 0 7 2.2 7.3 5.8.3 4.6-3.6 8.2-8.3 8.2C9.2 30 6 28 6 24.5z"/><path d="M21.6 19.8q3.6 1.2 5.2 4.8M12.5 30v4M16.5 30v4"/><circle cx="19.6" cy="19.4" r=".8" fill="currentColor"/></g><path d="M34 6v28" stroke-dasharray="2 3"/>`,
   time: `<path d="M13 35V14l7-8 7 8v21z"/><circle cx="20" cy="19" r="4.2"/><path class="ico-hand" d="M20 19v-3"/><path d="M20 19l2 1.2M17 35v-7h6v7"/>`,
   shops: `<path d="M5 14l3-6h24l3 6z"/><path d="M7 14v21h26V14M17 35v-9h6v9"/><g class="ico-bell"><path d="M29.5 17v2"/><path d="M27.5 23a2 2 0 0 1 4 0z"/></g>`,
   money: `<path d="M5 26a9 3.2 0 0 0 18 0a9 3.2 0 0 0-18 0v4a9 3.2 0 0 0 18 0v-4"/><path d="M5 30v4a9 3.2 0 0 0 18 0v-4"/><g class="ico-coin"><circle cx="28" cy="13" r="8"/><path d="M30.6 9.8a2.4 2.4 0 0 0-4.6 1V17M24.4 13.6h4.2M24.2 17h6.6"/></g>`,
