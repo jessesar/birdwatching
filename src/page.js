@@ -170,7 +170,7 @@ export function clockNote(clock) {
   const factor = r > 1 ? r : 1 / r;
   const hour = Math.round(60 / r);
   const day = 24 / r;
-  return `Time runs ${factor.toFixed(1)} times ${word} in Pino’s world. One Pino hour passes in ${hour} of our minutes; a whole Pino day in about ${day < 10 ? day.toFixed(1).replace(/\.0$/, "") : Math.round(day)} of our hours.`;
+  return `Time runs ${factor.toFixed(1)} times ${word} in Pino’s world. One Pino hour passes in ${hour} of our minutes, a whole Pino day in ${day < 10 ? day.toFixed(1).replace(/\.0$/, "") : Math.round(day)} hours.`;
 }
 
 export function timeFinding(clock) {
@@ -415,7 +415,7 @@ main{max-width:980px;margin:0 auto}
 .now .doing::first-letter{text-transform:uppercase}
 .now .thought{display:block;margin-top:12px;font-size:16px;line-height:1.55;font-style:italic;color:#cfc7bd}
 .now .thought>span{display:block;font-style:normal;font-size:12px;letter-spacing:.04em;color:var(--lamp);margin-bottom:3px}
-.ground .note{margin:18px 0 0;color:var(--ash);font-size:14px;max-width:372px}
+.ground .note{margin:18px 0 0;color:var(--ash);font-size:14px;max-width:400px}
 .ground-inner{align-items:start}
 .feel{margin-top:22px;display:grid;gap:10px;max-width:46ch}
 .feeling{margin:0;font-size:15px;line-height:1.5;color:#cfc7bd}
@@ -735,11 +735,35 @@ ${ourTests(data)}
   // Seeded randomness so the sky and the rooftops look the same on every visit.
   const rng = (seed) => () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
 
-  function townMinutesNow() {
+  // His clock is a forecast from the last reading at the measured speed. A
+  // reading only gives the minute, so it's taken as the middle of that minute.
+  // Asleep, his town reports no time: hold at the last reading rather than guess.
+  function forecast(t) {
     if (!D.last) return null;
-    // Asleep, his town reports no time: hold at the last reading rather than guess.
-    const run = D.rate && !D.asleep ? (D.rate * (Date.now() - D.last.realMs)) / 60000 : 0;
-    return D.last.town + run;
+    const run = D.rate && !D.asleep ? (D.rate * (t - D.last.realMs)) / 60000 : 0;
+    return D.last.town + 0.5 + run;
+  }
+  // When a new reading disagrees with the forecast, the clock doesn't jump: it
+  // runs a little faster or slower for a few seconds until they agree, and never
+  // backwards. A real leap (his nights race by) is followed at once.
+  let drift = null;
+  function townMinutesNow() {
+    const t = Date.now(), f = forecast(t);
+    if (f == null || !drift) return f;
+    const k = Math.min(1, (t - drift.start) / drift.ms);
+    if (k >= 1) { drift = null; return f; }
+    return f - drift.error * (1 - k * k * (3 - 2 * k));
+  }
+  function newReading(last) {
+    const shown = townMinutesNow();
+    D.last = last;
+    const f = forecast(Date.now());
+    if (shown == null || f == null) return;
+    const error = f - shown;
+    if (Math.abs(error) < 0.01 || Math.abs(error) > 30) { drift = null; return; }
+    // Slow enough that catching up from ahead never stops or reverses the clock.
+    const perMs = (D.rate || 1) / 60000;
+    drift = { start: Date.now(), error, ms: Math.max(6000, (Math.abs(error) / perMs) * 2) };
   }
 
   function build() {
@@ -1252,7 +1276,7 @@ ${ourTests(data)}
       D.asleep = Boolean(n.asleep);
       document.getElementById("feel").innerHTML = feelHTML(n);
     }
-    if (d.lastReading) D.last = d.lastReading;
+    if (d.lastReading && (!D.last || d.lastReading.realMs !== D.last.realMs)) newReading(d.lastReading);
     const measured = d.clock && d.clock.verdict.state !== "measuring";
     D.rate = measured ? d.clock.rate : null;
     his[2].setAttribute("visibility", D.rate ? "visible" : "hidden");
