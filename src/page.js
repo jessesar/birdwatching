@@ -824,7 +824,7 @@ ${beacon}
         for (let wx = x + 7; wx < x + w - 9; wx += 11) if (g() < 0.16) lit.push([wx, wy, true]);
       town.push({ x, w, h, lit, gable: g() < 0.4 });
       // His town isn't built up yet: open ground between the buildings.
-      x += w + 10 + g() * 46;
+      x += w + 5 + g() * 22;
     }
   }
 
@@ -881,11 +881,16 @@ ${beacon}
         ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, 6.283); ctx.stroke();
         if (p.glimmers) {
           // A glimmer: a faint, slow flicker inside the ring, not a lit star.
-          const flick = still ? 0.6 : 0.45 + 0.35 * Math.sin(t / 1300 + p.x) * Math.sin(t / 470 + p.y);
-          const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 12);
-          g.addColorStop(0, "rgba(242,196,109," + 0.55 * flick + ")"); g.addColorStop(1, "rgba(242,196,109,0)");
-          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, 12, 0, 6.283); ctx.fill();
-          ctx.fillStyle = "rgba(255,246,223," + (0.4 + 0.5 * flick) + ")"; ctx.beginPath(); ctx.arc(p.x, p.y, 1.6, 0, 6.283); ctx.fill();
+          // A glimmer: a soft warm glow that slowly breathes, and a small flickering
+          // light inside the ring. Clearly something, clearly not a lit star.
+          const breath = still ? 0.7 : 0.55 + 0.45 * Math.sin(t / 1600 + p.x);
+          const flick = still ? 0.6 : 0.6 + 0.4 * Math.sin(t / 470 + p.y);
+          const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 20);
+          g.addColorStop(0, "rgba(242,196,109," + 0.55 * breath + ")"); g.addColorStop(0.45, "rgba(242,196,109," + 0.18 * breath + ")"); g.addColorStop(1, "rgba(242,196,109,0)");
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, 20, 0, 6.283); ctx.fill();
+          ctx.strokeStyle = "rgba(242,196,109," + (0.45 + 0.3 * breath) + ")"; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, 6.283); ctx.stroke();
+          ctx.fillStyle = "rgba(255,246,223," + (0.55 + 0.45 * flick) + ")"; ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, 6.283); ctx.fill();
         }
         return;
       }
