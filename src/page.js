@@ -25,7 +25,7 @@ const byKeywords = (row) => (row.tagged_by === "keywords" ? ", keyword match" : 
 
 // Line drawings for the five tests, from his own world. Parts animate on hover.
 const ICONS = {
-  edges: `<path d="M3 34h28"/><g class="ico-move"><path d="M6 24.5c0-5 4-8.5 9-8.5 4 0 7 2.2 7.3 5.8.3 4.6-3.6 8.2-8.3 8.2C9.2 30 6 28 6 24.5z"/><path d="M21.6 19.8q3.6 1.2 5.2 4.8M12.5 30v4M16.5 30v4"/><circle cx="19.6" cy="19.4" r=".8" fill="currentColor"/></g><path d="M34 6v28" stroke-dasharray="2 3"/>`,
+  edges: `<path d="M3 34.5h28"/><g class="ico-move" transform="translate(12 22.6) scale(2.7)"><path vector-effect="non-scaling-stroke" d="M2.4-4.4C.6-4.8-1.6-3.6-3-1.6-4.3.3-3.8 2.1-2.1 2.6-.2 3.1 1.8 2.3 2.8.6 3.8-1.1 3.9-3.9 2.4-4.4z"/><path vector-effect="non-scaling-stroke" d="M3.4-2.9 8.6-1.3 M-.3 2.8.2 3.7-.4 4.4M1.2 2.6 1.9 3.5 1.6 4.4M-.9 4.4h.9M1.2 4.4h.9"/><circle cx="2.3" cy="-3.1" r=".45" fill="currentColor" stroke="none"/></g><path d="M35 6v28.5" stroke-dasharray="2 3"/>`,
   time: `<path d="M13 35V14l7-8 7 8v21z"/><circle cx="20" cy="19" r="4.2"/><path class="ico-hand" d="M20 19v-3"/><path d="M20 19l2 1.2M17 35v-7h6v7"/>`,
   shops: `<path d="M5 14l3-6h24l3 6z"/><path d="M7 14v21h26V14M17 35v-9h6v9"/><g class="ico-bell"><path d="M29.5 17v2"/><path d="M27.5 23a2 2 0 0 1 4 0z"/></g>`,
   money: `<path d="M5 26a9 3.2 0 0 0 18 0a9 3.2 0 0 0-18 0v4a9 3.2 0 0 0 18 0v-4"/><path d="M5 30v4a9 3.2 0 0 0 18 0v-4"/><g class="ico-coin"><circle cx="28" cy="13" r="8"/><path d="M30.6 9.8a2.4 2.4 0 0 0-4.6 1V17M24.4 13.6h4.2M24.2 17h6.6"/></g>`,
@@ -301,7 +301,7 @@ const dial = (id, label) => `<figure class="dial">
     <line id="${id}-m" class="hand minute" x1="0" y1="8" x2="0" y2="-44"/>
     <line id="${id}-s" class="hand second" x1="0" y1="12" x2="0" y2="-48"/>
     <circle r="2.6" class="pin"/>${id === "tc" ? `
-    <g id="tiny-pino" class="tiny-pino" aria-hidden="true"><path class="body" d="M-3.6-.6C-3.6-3-1.6-4.4.6-4.2 2.2-4 3.2-3 3.3-1.8 3.4-.2 2.2 1.6-.2 1.8-2.4 2-3.6 1-3.6-.6z"/><path class="line" d="M2.9-2.3Q4.5-1.9 5.2-.4M-1 1.6V3.1M.8 1.6V3.1M-1.7 3.1h1.3M.2 3.1h1.3"/><circle cx="2.1" cy="-2.6" r=".38" class="eye"/></g>` : ""}
+    <g id="tiny-pino" class="tiny-pino" aria-hidden="true"><path class="body" d="M2.4-4.4C.6-4.8-1.6-3.6-3-1.6-4.3.3-3.8 2.1-2.1 2.6-.2 3.1 1.8 2.3 2.8.6 3.8-1.1 3.9-3.9 2.4-4.4z"/><path class="line" d="M3.4-2.9 8.6-1.3 M-.3 2.8.2 3.7-.4 4.4M1.2 2.6 1.9 3.5 1.6 4.4M-.9 4.4h.9M1.2 4.4h.9"/><circle cx="2.2" cy="-3.1" r=".75" class="eye-white"/><circle cx="2.35" cy="-3.1" r=".35" class="eye"/></g>` : ""}
   </svg>
   <figcaption id="${id}-cap"><span>${label}</span><b id="${id}-t">--:--</b><small id="${id}-d"></small></figcaption>
 </figure>`;
@@ -444,7 +444,8 @@ q{quotes:"“" "”"}
 #town .minute,#town .hour,#town .second{stroke:var(--lamp)}
 #town{transition:opacity 1s ease}
 .tiny-pino .body{fill:var(--lamp)}
-.tiny-pino .line{fill:none;stroke:var(--lamp);stroke-width:.6;stroke-linecap:round}
+.tiny-pino .line{fill:none;stroke:var(--lamp);stroke-width:.5;stroke-linecap:round;stroke-linejoin:round}
+.tiny-pino .eye-white{fill:#f3efe9}
 .tiny-pino .eye{fill:#15110e}
 #town.asleep{opacity:.45}
 .pin{fill:var(--ivory)}
@@ -1029,7 +1030,7 @@ ${ourTests(data)}
   let perch = "pin", hop = null, shown = null;
   const tip = (deg, len) => [Math.sin((deg * Math.PI) / 180) * len, -Math.cos((deg * Math.PI) / 180) * len];
   const comfy = (deg) => { const d = ((deg % 360) + 360) % 360; return Math.abs(d - 90) <= 50 || Math.abs(d - 270) <= 50; };
-  const SIZE = 1.7;
+  const SIZE = 1.25;
   function placeTiny(mins) {
     if (!tiny) return;
     const deg = { s: ((mins * 60) % 60) * 6, m: (mins % 60) * 6, h: ((mins / 60) % 12) * 30 };
@@ -1052,7 +1053,7 @@ ${ourTests(data)}
     }
     shown = [x, y];
     const facing = perch === "pin" ? 1 : (x >= 0 ? 1 : -1);
-    tiny.setAttribute("transform", "translate(" + x.toFixed(2) + " " + (y - 3.1 * SIZE).toFixed(2) + ") scale(" + facing * SIZE + " " + SIZE + ")");
+    tiny.setAttribute("transform", "translate(" + x.toFixed(2) + " " + (y - 4.4 * SIZE).toFixed(2) + ") scale(" + facing * SIZE + " " + SIZE + ")");
   }
 
   const ourDate = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", day: "numeric", month: "long", year: "numeric" });
