@@ -301,7 +301,7 @@ const dial = (id, label) => `<figure class="dial">
     <line id="${id}-m" class="hand minute" x1="0" y1="8" x2="0" y2="-44"/>
     <line id="${id}-s" class="hand second" x1="0" y1="12" x2="0" y2="-48"/>
     <circle r="2.6" class="pin"/>${id === "tc" ? `
-    <g id="tiny-pino" class="tiny-pino" aria-hidden="true"><path class="body" d="M-3.6-.6C-3.6-3-1.6-4.4.6-4.2 2.2-4 3.2-3 3.3-1.8 3.4-.2 2.2 1.6-.2 1.8-2.4 2-3.6 1-3.6-.6z"/><path class="line" d="M2.9-2.3Q5.3-1.5 6.7 1.2M-1 1.6V3.1M.8 1.6V3.1M-1.7 3.1h1.3M.2 3.1h1.3"/><circle cx="2.1" cy="-2.6" r=".38" class="eye"/></g>` : ""}
+    <g id="tiny-pino" class="tiny-pino" aria-hidden="true"><path class="body" d="M-3.6-.6C-3.6-3-1.6-4.4.6-4.2 2.2-4 3.2-3 3.3-1.8 3.4-.2 2.2 1.6-.2 1.8-2.4 2-3.6 1-3.6-.6z"/><path class="line" d="M2.9-2.3Q4.5-1.9 5.2-.4M-1 1.6V3.1M.8 1.6V3.1M-1.7 3.1h1.3M.2 3.1h1.3"/><circle cx="2.1" cy="-2.6" r=".38" class="eye"/></g>` : ""}
   </svg>
   <figcaption id="${id}-cap"><span>${label}</span><b id="${id}-t">--:--</b><small id="${id}-d"></small></figcaption>
 </figure>`;
@@ -1019,24 +1019,28 @@ ${ourTests(data)}
     if (label.textContent !== text) label.textContent = text;
     if (below.textContent !== second) below.textContent = second;
   }
-  // Tiny Pino rides the second hand of his town clock, which races round about
-  // every 13 seconds. When it swings nearly straight down (within 45 degrees of
-  // six o'clock) he hops to the minute or hour hand, and jumps back on as soon as
-  // it comes round again. Without a second hand (asleep, or speed not yet known)
-  // he uses the other hands, and the pin when they all point down.
+  // Tiny Pino likes a hand lying near horizontal (within 50 degrees of three or
+  // nine o'clock); steeper, up or down, is too exciting. He prefers the second
+  // hand, which races round about every 13 seconds: when it gets steep he jumps
+  // to the minute or hour hand (at random if both are comfortable) and hops back
+  // as soon as it comes round. With no comfortable hand he waits on the pin.
   const tiny = document.getElementById("tiny-pino");
   const HANDS = { s: 48, m: 44, h: 28 };
   let perch = "pin", hop = null, shown = null;
   const tip = (deg, len) => [Math.sin((deg * Math.PI) / 180) * len, -Math.cos((deg * Math.PI) / 180) * len];
-  const upright = (deg) => { const d = ((deg % 360) + 360) % 360; return d < 135 || d > 225; };
+  const comfy = (deg) => { const d = ((deg % 360) + 360) % 360; return Math.abs(d - 90) <= 50 || Math.abs(d - 270) <= 50; };
   const SIZE = 1.7;
   function placeTiny(mins) {
     if (!tiny) return;
     const deg = { s: ((mins * 60) % 60) * 6, m: (mins % 60) * 6, h: ((mins / 60) % 12) * 30 };
     const spot = (p) => (p === "pin" ? [0, -2.6] : tip(deg[p], HANDS[p] - 4));
-    let want;
+    let want = perch;
     if (D.asleep || still) want = "pin";
-    else want = (D.rate ? ["s", "m", "h"] : ["m", "h"]).find((p) => upright(deg[p])) ?? "pin";
+    else if (D.rate && comfy(deg.s)) want = "s";
+    else if (perch === "pin" || perch === "s" || !comfy(deg[perch])) {
+      const options = ["m", "h"].filter((p) => comfy(deg[p]));
+      want = options.length ? options[Math.floor(Math.random() * options.length)] : "pin";
+    }
     const now = performance.now();
     if (want !== perch && !hop) { hop = { from: shown ?? spot(perch), start: now }; perch = want; }
     let [x, y] = spot(perch);
