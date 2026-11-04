@@ -81,7 +81,7 @@ every minute   derive()   clock speed and our tests (settable in wrangler.jsonc;
                           use 10 and 30 minutes on the Workers free plan)
 on request     fetch()    / renders the page, /data.json serves the observations,
                           /robots.txt and /sitemap.xml point search engines at it
-in the page    every 15s  status, clocks and stars refresh without reloading
+in the page    every 5s   status, clocks and stars refresh without reloading
 ```
 
 **Judging.** Each new entry first gets keyword tags (`src/observe.js`), so the

@@ -1022,30 +1022,32 @@ ${ourTests(data)}
   }
   // Tiny Pino likes a hand lying near horizontal (within 50 degrees of three or
   // nine o'clock); steeper, up or down, is too exciting. He prefers the second
-  // hand, which races round: when it gets steep he moves to the minute or hour
-  // hand (at random if both are comfortable) and back as soon as it comes round.
-  // He sees it coming: a second before, he waddles in along his hand towards the
-  // centre, glides across to the other hand there, and waddles out again; in
-  // between he stands still. He doesn't rejoin the second hand every round: when
-  // it swings away he decides whether to go back next time. With no comfortable
-  // hand he waits on the pin; asleep too.
+  // hand, which races round; when it gets steep he moves to the minute or hour
+  // hand (at random if both are comfortable). He doesn't rejoin the second hand
+  // every round: when it swings away he decides whether to go back next time.
+  // He walks, and never floats upwards: uphill or level he waddles at his own
+  // pace; downhill he glides, faster, leaning forward. All hands meet at the pin,
+  // so to change hands he heads in along his hand, timed to reach the pin just as
+  // the move is due, turns, and heads out along the new one; in between he stands
+  // still. With no comfortable hand he waits at the pin; asleep too.
   const tiny = document.getElementById("tiny-pino");
   const HANDS = { s: 48, m: 44, h: 28 };
-  const SIZE = 1.25, INNER = 11, LEAD_S = 1.1, OUT_MS = 900, CROSS_MS = 650;
-  let perch = "pin", cross = null, shown = null, landedAt = 0;
+  const SIZE = 1.25, WALK = 26, GLIDE = 52, LOOKAHEAD_S = 2.5;
+  let perch = "pin", r = 0, lastT = 0, facing = 1;
   let secondWasComfy = false, rejoinSecond = true;
-  const at = (deg, r) => [Math.sin((deg * Math.PI) / 180) * r, -Math.cos((deg * Math.PI) / 180) * r];
+  const at = (deg, rr) => [Math.sin((deg * Math.PI) / 180) * rr, -Math.cos((deg * Math.PI) / 180) * rr];
   const comfy = (deg) => { const d = ((deg % 360) + 360) % 360; return Math.abs(d - 90) <= 50 || Math.abs(d - 270) <= 50; };
-  const smooth = (k) => k * k * (3 - 2 * k);
   function placeTiny(mins) {
     if (!tiny) return;
     const now = performance.now();
+    const dt = lastT ? Math.min(0.1, (now - lastT) / 1000) : 0;
+    lastT = now;
     const deg = { s: ((mins * 60) % 60) * 6, m: (mins % 60) * 6, h: ((mins / 60) % 12) * 30 };
     // Degrees per real second for each hand, at his clock's measured speed.
     const speed = D.rate ? { s: 6 * D.rate, m: 0.1 * D.rate, h: D.rate / 120 } : { s: 0, m: 0, h: 0 };
     const within = (p, test) => {
       if (!speed[p]) return Infinity;
-      for (let t = 0.05; t <= LEAD_S; t += 0.05) if (test(deg[p] + speed[p] * t)) return t;
+      for (let t = 0.05; t <= LOOKAHEAD_S; t += 0.05) if (test(deg[p] + speed[p] * t)) return t;
       return Infinity;
     };
 
@@ -1059,49 +1061,39 @@ ${ourTests(data)}
     else if (secondComfy && (perch === "s" || perch === "pin" || rejoinSecond)) want = "s";
     else if (perch === "pin" || perch === "s" || !comfy(deg[perch])) {
       const options = ["m", "h"].filter((p) => comfy(deg[p]));
-      want = options.length ? options[Math.floor(Math.random() * options.length)] : "pin";
+      want = options.includes(perch) ? perch : options.length ? options[Math.floor(Math.random() * options.length)] : "pin";
     }
 
     // How soon he'll have to move: his hand getting steep, or the second hand
-    // coming round while he waits on another.
+    // coming round (if he means to rejoin it).
     let soon = Infinity;
     if (perch === "s") soon = within("s", (d) => !comfy(d));
     else if (perch !== "pin") soon = Math.min(D.rate && rejoinSecond ? within("s", comfy) : Infinity, within(perch, (d) => !comfy(d)));
 
-    // Where along his hand he stands: out at the tip, in towards the centre before a move.
-    const reach = (p) => {
-      if (p === "pin") return 0;
-      const tipR = HANDS[p] - 4;
-      let r = INNER + (tipR - INNER) * smooth(Math.min(1, Math.max(0, now - landedAt) / OUT_MS));
-      if (p === perch && soon < LEAD_S) r = Math.min(r, tipR - (tipR - INNER) * smooth(1 - soon / LEAD_S));
-      return r;
-    };
-    const spot = (p, r) => (p === "pin" ? [0, -2.6] : at(deg[p], r));
+    // Where he wants to stand on his hand: at the tip, or near enough to the pin
+    // to reach it in time. He walks there at his own pace, never faster.
+    let target = perch === "pin" ? 0 : Math.min(HANDS[perch] - 4, soon * WALK);
+    if (want !== perch) target = 0;
+    // Downhill if moving along his hand takes him lower on the screen.
+    const handUp = perch === "pin" ? 0 : -Math.cos((deg[perch] * Math.PI) / 180);
+    const downhill = perch !== "pin" && Math.sign(target - r) * handUp > 0.05;
+    const before = r, step = (downhill ? GLIDE : WALK) * dt;
+    r += Math.max(-step, Math.min(step, target - r));
+    if (want !== perch && r <= 0.01) { perch = want; r = 0; }
+    const walking = Math.abs(r - before) > 1e-3;
+    const gliding = walking && downhill;
 
-    if (want !== perch && !cross) {
-      cross = { from: shown ?? spot(perch, reach(perch)), start: now };
-      perch = want;
-      landedAt = now + CROSS_MS;
+    // At the pin he stands on its top; out on a hand, at its point r from the centre.
+    let [x, y] = perch === "pin" ? [0, 0] : at(deg[perch], r);
+    y -= 2.6 * (1 - Math.min(1, r / 3));
+    // Face the way he walks: out along the hand, or in towards the pin.
+    if (walking && perch !== "pin") {
+      const out = Math.sin((deg[perch] * Math.PI) / 180) >= 0 ? 1 : -1;
+      facing = r > before ? out : -out;
     }
-    let [x, y] = spot(perch, cross ? (perch === "pin" ? 0 : INNER) : reach(perch));
-    let walking = false;
-    if (cross) {
-      const k = Math.min(1, (now - cross.start) / CROSS_MS), e = smooth(k);
-      x = cross.from[0] + (x - cross.from[0]) * e;
-      y = cross.from[1] + (y - cross.from[1]) * e - Math.sin(k * Math.PI) * 2.5;
-      walking = true;
-      if (k === 1) cross = null;
-    } else if (perch !== "pin") {
-      walking = now - landedAt < OUT_MS || soon < LEAD_S;
-    }
-    // Face the way he's going: in towards the centre before a move, otherwise out.
-    const inward = !cross && perch !== "pin" && soon < LEAD_S;
-    let facing = x >= 0 ? 1 : -1;
-    if (inward) facing = -facing;
-    if (shown && cross) facing = x >= shown[0] ? 1 : -1;
-    shown = [x, y];
-    // The waddle: rocking from foot to foot about his feet while he walks.
-    const waddle = walking ? Math.sin(now / 85) * 9 : 0;
+    // The waddle: rocking from foot to foot about his feet while he walks; a
+    // forward lean while he glides.
+    const waddle = gliding ? 12 * facing : walking ? Math.sin(now / 85) * 9 : 0;
     tiny.setAttribute("transform", "translate(" + x.toFixed(2) + " " + y.toFixed(2) + ") rotate(" + waddle.toFixed(1) + ") translate(0 " + (-4.4 * SIZE).toFixed(2) + ") scale(" + facing * SIZE + " " + SIZE + ")");
   }
 
@@ -1256,7 +1248,7 @@ ${ourTests(data)}
   stamp(); setInterval(stamp, 15 * 1000);
 
   // Only while the tab is visible; coming back to it refreshes right away.
-  setInterval(() => { if (!document.hidden) refresh(); }, 15 * 1000);
+  setInterval(() => { if (!document.hidden) refresh(); }, 5 * 1000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
 })();
 </script>
