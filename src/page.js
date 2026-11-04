@@ -127,7 +127,7 @@ const dial = (id, label) => `<figure class="dial">
     <line id="${id}-s" class="hand second" x1="0" y1="12" x2="0" y2="-48"/>
     <circle r="2.6" class="pin"/>
   </svg>
-  <figcaption id="${id}-cap"><span>${label}</span><b id="${id}-t">--:--</b></figcaption>
+  <figcaption id="${id}-cap"><span>${label}</span><b id="${id}-t">--:--</b><small id="${id}-d"></small></figcaption>
 </figure>`;
 
 // Data for the sky script. "<" is escaped so nothing in Pino's words can close the tag.
@@ -206,7 +206,7 @@ a:focus-visible{outline:2px solid var(--lamp);outline-offset:3px;border-radius:2
 
 .sky{position:relative;height:clamp(460px,72vh,680px);background:linear-gradient(var(--zenith) 0%,#141223 45%,var(--horizon) 100%);overflow:hidden}
 .sky canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
-.masthead{position:relative;z-index:2;max-width:980px;margin:0 auto;padding-block:max(28px,env(safe-area-inset-top,0px)) 0}
+.masthead{position:relative;z-index:2;max-width:980px;margin:0 auto;padding-block:max(clamp(40px,7vh,64px),env(safe-area-inset-top,0px)) 0}
 .kana{font:700 15px/1 var(--kana);letter-spacing:.12em;color:var(--lamp);margin:0 0 12px}
 h1{font:500 clamp(30px,5.4vw,52px)/1.05 var(--text);letter-spacing:-.015em;margin:0;text-wrap:balance;max-width:14ch}
 .masthead p.sub{color:var(--ash);margin:12px 0 0;max-width:62ch;font-size:15px;line-height:1.5}
@@ -250,7 +250,8 @@ q{quotes:"“" "”"}
 #town.asleep{opacity:.45}
 .pin{fill:var(--ivory)}
 .dial figcaption{display:grid;font-size:14px;color:var(--ash)}
-.dial figcaption b{font-weight:500;font-size:22px;color:var(--ivory);font-variant-numeric:tabular-nums}
+.dial figcaption b{font-weight:500;font-size:22px;color:var(--ivory);font-variant-numeric:tabular-nums;white-space:nowrap}
+.dial figcaption small{font-size:14px;color:var(--ash);white-space:nowrap}
 
 /* His five tests as a row of cards you scroll sideways. */
 .his{--edge:max(20px,calc((100% - 940px) / 2));padding-block:72px 24px;scroll-margin-top:24px}
@@ -767,21 +768,24 @@ ${data.tests.map((t) => testItem(t, data)).join("\n")}
   // The two clocks on the ground. Minutes are fractional, so every hand sweeps;
   // his runs at the measured town speed, so his second hand races ours.
   const pad = (n) => String(Math.floor(n)).padStart(2, "0");
-  const hands = (id) => ["h", "m", "s", "t"].map((k) => document.getElementById(id + "-" + k));
+  const hands = (id) => ["h", "m", "s", "t", "d"].map((k) => document.getElementById(id + "-" + k));
   const ours = hands("oc"), his = hands("tc"), townBox = document.getElementById("town");
   if (!D.rate) his[2].setAttribute("visibility", "hidden");
-  function setDial([h, m, s, label], mins, suffix) {
+  // The time on the first line, the day (his) or date (ours) always on the second.
+  function setDial([h, m, s, label, below], mins, second, withSeconds) {
     h.setAttribute("transform", "rotate(" + (((mins / 60) % 12) * 30) + ")");
     m.setAttribute("transform", "rotate(" + ((mins % 60) * 6) + ")");
     s.setAttribute("transform", "rotate(" + (((mins * 60) % 60) * 6) + ")");
-    const text = pad((mins / 60) % 24) + ":" + pad(mins % 60) + (D.rate || !suffix ? ":" + pad((mins * 60) % 60) : "") + (suffix || "");
+    const text = pad((mins / 60) % 24) + ":" + pad(mins % 60) + (withSeconds ? ":" + pad((mins * 60) % 60) : "");
     if (label.textContent !== text) label.textContent = text;
+    if (below.textContent !== second) below.textContent = second;
   }
+  const ourDate = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "long", day: "numeric", month: "long", year: "numeric" });
   function dials() {
     const now = new Date();
-    setDial(ours, now.getUTCHours() * 60 + now.getUTCMinutes() + (now.getUTCSeconds() + now.getUTCMilliseconds() / 1000) / 60);
+    setDial(ours, now.getUTCHours() * 60 + now.getUTCMinutes() + (now.getUTCSeconds() + now.getUTCMilliseconds() / 1000) / 60, ourDate.format(now), true);
     const m = townMinutesNow();
-    if (m != null) setDial(his, ((m % 1440) + 1440) % 1440, D.asleep ? ", asleep" : ", day " + Math.floor(m / 1440));
+    if (m != null) setDial(his, ((m % 1440) + 1440) % 1440, D.asleep ? "asleep, day " + Math.floor(m / 1440) : "day " + Math.floor(m / 1440), Boolean(D.rate) && !D.asleep);
     his[2].setAttribute("visibility", D.rate && !D.asleep ? "visible" : "hidden");
     townBox.classList.toggle("asleep", D.asleep);
   }
