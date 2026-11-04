@@ -385,8 +385,12 @@ a{color:inherit}
 a:focus-visible{outline:2px solid var(--lamp);outline-offset:3px;border-radius:2px}
 .gutter{padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
 
-.sky{position:relative;height:clamp(460px,72vh,680px);background:linear-gradient(var(--zenith) 0%,#141223 45%,var(--horizon) 100%);overflow:hidden}
+/* Not clipped, and above the section below, so a low star's tooltip can hang over it. */
+.sky{position:relative;z-index:3;height:clamp(460px,72vh,680px);background:linear-gradient(var(--zenith) 0%,#141223 45%,var(--horizon) 100%)}
 .sky canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+/* Text in the sky keeps a soft shadow, so it stays readable by day. */
+.masthead,.mark,.roost-label{text-shadow:0 1px 3px rgba(8,10,20,.55)}
+.mark .tip{text-shadow:none}
 .masthead{position:relative;z-index:2;max-width:980px;margin:0 auto;padding-block:max(clamp(40px,7vh,64px),env(safe-area-inset-top,0px)) 0}
 .kana{font:700 15px/1 var(--kana);letter-spacing:.12em;color:var(--lamp);margin:0 0 12px}
 h1{font:500 clamp(30px,5.4vw,52px)/1.05 var(--text);letter-spacing:-.015em;margin:0;text-wrap:balance;max-width:14ch}
@@ -397,13 +401,14 @@ h1{font:500 clamp(30px,5.4vw,52px)/1.05 var(--text);letter-spacing:-.015em;margi
 .mark span{font-weight:600;font-size:14px}
 .mark small{font-size:12px;color:var(--ash)}
 .mark:hover>span{color:var(--lamp)}
-.mark .tip{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);width:max-content;max-width:min(240px,70vw);white-space:normal;text-align:left;font-style:normal;font-size:13px;line-height:1.45;color:var(--ivory);background:rgba(13,10,8,.9);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;opacity:0;pointer-events:none;transition:opacity .2s ease}
+.mark .tip{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);width:max-content;max-width:min(310px,80vw);white-space:normal;text-align:left;font-style:normal;font-size:13px;line-height:1.45;color:var(--ivory);background:#15110e;border:1px solid var(--rule);border-radius:8px;padding:8px 10px;opacity:0;pointer-events:none;transition:opacity .2s ease}
 .mark .tip-about{display:block;color:#cfc7bd}
 .mark .tip-seen{display:block;margin-top:8px;padding-top:8px;border-top:1px solid var(--rule);color:var(--ivory)}
 .mark .tip-when{display:block;color:var(--lamp);font-weight:500;font-size:12px;margin-top:4px}
 .mark.tip-left .tip{left:0;transform:none}
 .mark.tip-right .tip{left:auto;right:0;transform:none}
 .mark:hover .tip,.mark:focus-visible .tip,.mark.open .tip{opacity:1}
+.mark:hover,.mark:focus-visible,.mark.open{z-index:10}
 .mark .tip-more{display:none}
 /* On touch screens a tap opens the tooltip; "Read more" goes to the card. */
 @media (hover:none){
@@ -992,16 +997,18 @@ ${beacon}
     [0, "#0b0e19", "#141223", "#1d1611", 1],
     [4.5, "#0b0e19", "#141223", "#1d1611", 1],
     [6, "#1b2245", "#4b3c63", "#c4835a", 0.45],
-    [8, "#28497a", "#5577a0", "#b8a48a", 0.08],
-    [16.5, "#28497a", "#5577a0", "#b8a48a", 0.08],
+    [8, "#22406c", "#45658d", "#9c8c78", 0.08],
+    [16.5, "#22406c", "#45658d", "#9c8c78", 0.08],
     [18.5, "#211f45", "#5c3c62", "#cf7a4c", 0.35],
     [20.5, "#0b0e19", "#141223", "#1d1611", 1],
     [24, "#0b0e19", "#141223", "#1d1611", 1],
   ];
   const hex = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
   const mix = (a, b, f) => "rgb(" + hex(a).map((v, i) => Math.round(v + (hex(b)[i] - v) * f)).join(",") + ")";
+  // ?sky=night shows his sky at night whatever his clock says (for the preview image).
+  const forceNight = new URLSearchParams(location.search).get("sky") === "night";
   function skyNow() {
-    const m = townMinutesNow();
+    const m = forceNight ? 0 : townMinutesNow();
     const hour = m == null ? 0 : ((((m % 1440) + 1440) % 1440) / 60);
     const i = SKY.findIndex((k, j) => j < SKY.length - 1 && hour >= k[0] && hour < SKY[j + 1][0]);
     const [h0, z0, m0, g0, s0] = SKY[i], [h1, z1, m1, g1, s1] = SKY[i + 1];

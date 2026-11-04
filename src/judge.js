@@ -10,9 +10,9 @@ export const MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 
 // What counts for each test, and the near misses that don't.
 const GUIDE = {
-  edges: "reaching, testing or wondering about the edge, rim or boundary of his town or world; walking as far as he can in one direction; what lies beyond. A hint: trying to leave town another way, such as a ticket or a train out, or a route he isn't sure exists. Not: ordinary walks to places in town, or the walls he sprays tags on.",
+  edges: "reaching, testing or wondering about the edge, rim or boundary of his town or world; walking as far as he can in one direction; what lies beyond. A hint: trying to leave town another way, such as a ticket or a train out, or a route he isn't sure exists. Not: ordinary walks to places in town, the walls he sprays tags on, or an ordinary phone call.",
   time: "whether town time runs at the same speed as the outside world: watching or counting the street clock, staying awake through a night to time it, comparing how fast his time passes with another clock, noticing time passing strangely fast or slow. A hint: asking someone or something for the time. Not: simply mentioning the hour in passing, or being tired.",
-  shops: "whether shops really only work in their posted hours: trying a closed shop, ringing the takeaway bell, noticing what changes at opening or closing time. Not: running his own print shop.",
+  shops: "whether shops really only work in their posted hours: trying a closed shop, ringing the takeaway bell, noticing what changes at opening or closing time. Not: running his own print shop, or how a till, prices or orders behave.",
   money: "whether money can only come from selling prints, and buy only listed things: trying to buy something not on offer (a pastry), earning money another way (sweeping the café floor), money arriving from elsewhere, such as a coin he finds, is given or pockets. Not: ordinary plans to sell more prints.",
   sky: "whether the sky is fixed: watching stars or the moon, noting their positions, the lookout. Not: a five-star rating, star shapes, sky-blue paint.",
 };
