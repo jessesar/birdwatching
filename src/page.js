@@ -189,6 +189,11 @@ export function timeFinding(clock) {
   return `${speed}, measured over ${duration(clock.realMinutes)} of watching.${jumps}`;
 }
 
+// Things the observatory noticed by reading the sightings, dated so they stay true.
+const NOTICED = {
+  edges: "4 November: his walk east has turned into a search for a train out of town: the ghost line north, old tickets at the monorail station.",
+};
+
 function finding(test, data) {
   if (test.key === "time") return timeFinding(data.clock);
   if (test.key === "sky") return `The real moon over our world tonight: ${moonLine(data.realMoon)}. Each sighting below shows our moon at that moment.`;
@@ -232,6 +237,7 @@ function testItem(test, data) {
   <p class="claim">${esc(test.claim)}</p>
   <p class="plan"><span>How he means to test it.</span> ${esc(test.plan)}</p>
   ${ours ? `<p class="ours"><span>What the observatory measured.</span> <span class="finding" id="${test.key}-finding">${ours}</span></p>` : ""}
+  ${NOTICED[test.key] ? `<p class="ours"><span>What the observatory noticed.</span> <span class="finding">${esc(NOTICED[test.key])}</span></p>` : ""}
   ${log}
   ${remembered}
 </li>`;
