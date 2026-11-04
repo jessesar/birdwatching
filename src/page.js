@@ -1061,7 +1061,8 @@ ${ourTests(data)}
   // still. With no comfortable hand he waits at the pin; asleep too.
   const tiny = document.getElementById("tiny-pino");
   const HANDS = { s: 48, m: 44, h: 28 };
-  const SIZE = 1.25, WALK = 26, GLIDE_ACC = 150, GLIDE_MAX = 110;
+  // Units per second; he sets off EARLY seconds before a move is due.
+  const SIZE = 1.25, WALK = 34, GLIDE_ACC = 210, GLIDE_MAX = 145, EARLY = 0.5;
   let perch = "pin", r = 0, lastT = 0, facing = 1, stillSince = 0, sit = 0, movedAt = 0;
   let v = 0, phase = 0, wobbleAt = -1e9;
   const tinyUpper = document.getElementById("tiny-upper"), tinyLegs = document.getElementById("tiny-legs");
@@ -1137,8 +1138,9 @@ ${ourTests(data)}
     let target = tipR;
     if (want !== perch) target = 0;
     else if (perch !== "pin" && soon < Infinity) {
-      if (downhillFor(-1)) { if (soon <= Math.sqrt((2 * r) / pull) + 0.15) target = 0; }
-      else target = Math.min(tipR, soon * climb);
+      const ahead = Math.max(0, soon - EARLY);
+      if (downhillFor(-1)) { if (ahead <= Math.sqrt((2 * r) / pull) + 0.15) target = 0; }
+      else target = Math.min(tipR, ahead * climb);
     }
     const dir = Math.sign(target - r);
     const downhill = downhillFor(dir);
@@ -1184,11 +1186,13 @@ ${ourTests(data)}
     // The waddle: rocking from foot to foot while he walks, slower and heavier on
     // a steep climb; a forward lean while he slides; a dying wobble after a slide.
     if (walking && !gliding) phase += dt * (v / WALK) * 11.8;
-    const sway = 9 * (1 + 0.5 * steep);
+    // He overdoes it: a big sway from foot to foot, with a little hop each step.
+    const sway = 14 * (1 + 0.5 * steep);
     let waddle = gliding ? 12 * facing : walking ? Math.sin(phase) * sway : 0;
+    const bounce = walking && !gliding ? Math.abs(Math.sin(phase)) * 1.4 : 0;
     const since = now - wobbleAt;
     if (since < 700) waddle += 14 * Math.exp(-since / 200) * Math.sin(since / 28);
-    tiny.setAttribute("transform", "translate(" + x.toFixed(2) + " " + y.toFixed(2) + ") rotate(" + waddle.toFixed(1) + ") translate(0 " + (-4.4 * SIZE).toFixed(2) + ") scale(" + facing * SIZE + " " + SIZE + ")");
+    tiny.setAttribute("transform", "translate(" + x.toFixed(2) + " " + (y - bounce).toFixed(2) + ") rotate(" + waddle.toFixed(1) + ") translate(0 " + (-4.4 * SIZE).toFixed(2) + ") scale(" + facing * SIZE + " " + SIZE + ")");
   }
 
   const ourDate = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", day: "numeric", month: "long", year: "numeric" });
