@@ -274,7 +274,7 @@ h3{font:500 20px/1.3 var(--text);margin:56px 0 0}
 .dive-art{width:100%;height:auto;display:block;overflow:hidden;-webkit-mask-image:radial-gradient(ellipse 52% 60% at 50% 55%,#000 55%,transparent 100%);mask-image:radial-gradient(ellipse 52% 60% at 50% 55%,#000 55%,transparent 100%)}
 .dive-text{display:grid;gap:14px;color:#cfc7bd;font-size:16px;max-width:60ch;min-width:0}
 .dive-text p{margin:0}
-.dive-text div{display:grid;gap:10px}
+.dive-text div{display:grid;gap:1em;align-content:center}
 .dive.live{height:300vh}
 .dive.live .dive-stage{position:sticky;top:0;height:100vh;height:100svh;margin-top:0;align-content:center}
 .dive.live .dive-text{gap:0}
