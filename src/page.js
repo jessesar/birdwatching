@@ -1050,9 +1050,10 @@ ${ourTests(data)}
   // hand (at random if both are comfortable). There he settles in for a good
   // while (4 to 9 seconds), until watching the second hand go round makes him
   // curious enough to move on: at random to the second hand or to the other
-  // steady hand, whichever is comfortable. He only joins the second hand while
-  // it's climbing (the left side, 220 to 320 degrees) and when he can reach it
-  // in time; a hand on its way down would only take him somewhere he'd have to leave.
+  // steady hand, whichever is comfortable. He joins the second hand where he can
+  // climb onto it: on the left while it rises (220 to 320 degrees), or in the
+  // upper right while it still points up (40 to 90 degrees), walking up it as it
+  // tips over; and only when he can reach it in time.
   // He walks, and never floats upwards: uphill or level he waddles at his own
   // pace; downhill he glides, faster, leaning forward. All hands meet at the pin,
   // so to change hands he heads in along his hand, timed to reach the pin just as
@@ -1091,10 +1092,10 @@ ${ourTests(data)}
     const sat = (now - arrivedAt) / 1000;
     const curious = (t) => perch !== "s" && sat + t >= boredAfter;
     const sd = ((deg.s % 360) + 360) % 360;
-    const climbing = Boolean(D.rate) && sd >= 220 && sd <= 320;
-    const canReach = climbing && untilEdge("s") > r / WALK + 0.6;
-    // Time until the second hand starts its next climb.
-    const untilClimb = D.rate ? (((220 - sd) % 360) + 360) % 360 / speed.s : Infinity;
+    const joinable = Boolean(D.rate) && ((sd >= 220 && sd <= 320) || (sd >= 40 && sd <= 90));
+    const canReach = joinable && untilEdge("s") > r / WALK + 0.6;
+    // Time until the second hand next comes into a stretch he can join.
+    const untilJoin = D.rate ? Math.min(...[40, 220].map((a) => ((((a - sd) % 360) + 360) % 360) / speed.s)) : Infinity;
 
     // Once he's had enough, he picks where to go next among the comfortable options.
     if (!next && perch !== "s" && curious(0)) {
@@ -1117,7 +1118,7 @@ ${ourTests(data)}
     // coming round (if he means to rejoin it).
     let soon = Infinity;
     if (perch === "s") soon = untilEdge("s");
-    else if (perch !== "pin") soon = Math.min(next === "s" && !climbing ? untilClimb : Infinity, comfy(deg[perch]) ? untilEdge(perch) : 0);
+    else if (perch !== "pin") soon = Math.min(next === "s" && !joinable ? untilJoin : Infinity, comfy(deg[perch]) ? untilEdge(perch) : 0);
 
     // How his hand slopes: 1 is vertical, 0 flat. Uphill or downhill depends on
     // which way along it he goes (screen y grows downwards).
