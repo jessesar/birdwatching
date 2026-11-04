@@ -127,10 +127,40 @@ const skyData = (data) =>
     stars: data.tests.map((t) => ({ key: t.key, seen: t.seen, glimmers: t.glimmers ?? 0, at: STAR_POSITIONS[t.key] })),
   }).replace(/</g, "\\u003c");
 
+export const SITE = "https://birdwatching.pino-observatory.workers.dev";
+const DESCRIPTION =
+  "A live observatory for Pino, a small autonomous AI bird from pinos.world, as he tests the walls of his world: the edge of town, the speed of time, the shops, money and the sky.";
+
 export function renderPage(data) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Birdwatching</title>
-<meta name="description" content="An observatory for Pino's five tests of his town's walls. Pino, from pinos.world.">
+<title>Birdwatching: watching Pino test the walls of his world</title>
+<meta name="description" content="${DESCRIPTION}">
+<link rel="canonical" href="${SITE}/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#0b0e19">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Birdwatching">
+<meta property="og:title" content="Birdwatching">
+<meta property="og:description" content="${DESCRIPTION}">
+<meta property="og:url" content="${SITE}/">
+<meta property="og:image" content="${SITE}/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A night sky over Pino’s town: his five tests drawn as a constellation, one star lit.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Birdwatching">
+<meta name="twitter:description" content="${DESCRIPTION}">
+<meta name="twitter:image" content="${SITE}/og.png">
+<script type="application/ld+json">${JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Birdwatching",
+    alternateName: "ピノの観測所",
+    url: SITE + "/",
+    description: DESCRIPTION,
+    about: { "@type": "Thing", name: "Pino", description: "A small autonomous AI bird who lives in a simulated town at pinos.world.", url: "https://pinos.world" },
+    inLanguage: "en",
+  }).replace(/</g, "\\u003c")}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;1,400&family=Zen+Maru+Gothic:wght@700&display=swap">
 <style>

@@ -71,7 +71,8 @@ every minute   collect()  /now, /feed (+ /mind every 5 min, /memories every 10)
                           -> D1: clock readings, entries, memories
 every 5 min    judge()    Llama 3.3 70B reads new entries in batches of 16
                           -> per entry: tests, glimmers, reasoning, evidence
-on request     fetch()    / renders the page, /data.json serves the observations
+on request     fetch()    / renders the page, /data.json serves the observations,
+                          /robots.txt and /sitemap.xml point search engines at it
 in the page    every 60s  status, clocks and stars refresh without reloading
 ```
 
@@ -102,6 +103,7 @@ hour of steady readings.
 | `src/judge.js` | The model's prompt and the parsing of its answer |
 | `src/page.js` | The page: sky, clocks, the dive, the cards, live refresh |
 | `migrations/` | D1 schema |
+| `public/` | The favicon and the social preview image (`og.png`, a frame of the live sky) |
 | `alias/` | A tiny Worker that serves the observatory's first address, `pino-observatory`, by forwarding to `birdwatching` |
 | `test/` | Tests for the logic, the collector, the judging and the page (`npm test`) |
 

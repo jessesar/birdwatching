@@ -21,5 +21,8 @@
   // they touch. About a fifth of the free daily Workers AI allowance.
   "ai": { "binding": "AI" },
 
+  // The favicon and the social preview image; everything else is the Worker.
+  "assets": { "directory": "./public" },
+
   "observability": { "enabled": true }
 }

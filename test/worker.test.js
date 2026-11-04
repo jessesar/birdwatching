@@ -115,8 +115,8 @@ test("Pino's words are escaped, never run as markup", () => {
   assert.ok(!html.includes("<img src=x"));
   assert.ok(!html.includes("<script>alert"));
   assert.ok(html.includes("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;"));
-  // Exactly the two scripts the page ships: its data and its sky.
-  assert.equal(html.match(/<script/g).length, 2);
+  // Exactly the three scripts the page ships: structured data, its data and its sky.
+  assert.equal(html.match(/<script/g).length, 3);
 });
 
 test("renders a fresh observatory with no readings yet", () => {
@@ -147,3 +147,15 @@ test("shows the measured clock speed once there is a verdict", () => {
   assert.ok(html.includes('"rate":4.8'));
 });
 
+
+test("tells search engines and link previews what the page is", async () => {
+  const html = renderPage(pageData());
+  for (const tag of ['<link rel="canonical" href="https://birdwatching.pino-observatory.workers.dev/">', 'property="og:image" content="https://birdwatching.pino-observatory.workers.dev/og.png"', 'name="twitter:card" content="summary_large_image"', '<meta name="description"', '"@type":"WebSite"'])
+    assert.ok(html.includes(tag), tag);
+  assert.ok(!html.includes('name="robots"'));
+  const { default: worker } = await import("../src/index.js");
+  const robots = await (await worker.fetch(new Request("https://example.test/robots.txt"), {})).text();
+  assert.match(robots, /Allow: \/\n\nSitemap: https:\/\/birdwatching\.pino-observatory\.workers\.dev\/sitemap\.xml/);
+  const sitemap = await (await worker.fetch(new Request("https://example.test/sitemap.xml"), {})).text();
+  assert.match(sitemap, /<loc>https:\/\/birdwatching\.pino-observatory\.workers\.dev\/<\/loc>/);
+});

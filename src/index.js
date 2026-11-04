@@ -1,5 +1,5 @@
 import { TESTS, tagText, encodeTags, townMinutes, clockRate, timeVerdict, moon } from "./observe.js";
-import { renderPage, timeFinding } from "./page.js";
+import { renderPage, timeFinding, SITE } from "./page.js";
 import { MODEL, judgeMessages, parseJudgement } from "./judge.js";
 
 const API = "https://pinos.world/api/v1";
@@ -229,6 +229,12 @@ export default {
 
   async fetch(request, env) {
     const { pathname } = new URL(request.url);
+    if (pathname === "/robots.txt") return new Response(`User-agent: *\nAllow: /\n\nSitemap: ${SITE}/sitemap.xml\n`);
+    if (pathname === "/sitemap.xml") {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` +
+        `<url><loc>${SITE}/</loc><changefreq>hourly</changefreq></url></urlset>\n`;
+      return new Response(xml, { headers: { "content-type": "application/xml" } });
+    }
     if (pathname !== "/" && pathname !== "/data.json") return new Response("Not here.", { status: 404 });
 
     const data = await observations(env);
