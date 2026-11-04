@@ -833,6 +833,15 @@ ${beacon}
       cat: Math.round(Math.min(W * 0.25, cx0 - 92)),
       stone: Math.round(Math.max(W * 0.8, cx0 + 120)),
     };
+    // The cat gets an open stretch of its own, and stands in the middle of it.
+    let left = -Infinity, right = Infinity;
+    for (const b of town) {
+      if (b.x < landmarks.cat + 48 && b.x + b.w > landmarks.cat - 48) b.cat = true;
+      else if (b.x + b.w <= landmarks.cat) left = Math.max(left, b.x + b.w);
+      else right = Math.min(right, b.x);
+    }
+    right = Math.min(right, cx0 - 22); // the clock tower
+    if (isFinite(left) && isFinite(right)) landmarks.cat = Math.round((left + right) / 2);
   }
 
   // The big cat (white in his town, a dark shape in ours), seen from the front:
@@ -868,8 +877,7 @@ ${beacon}
 
   // The glowing stone. In his town it shows a number that only his live world
   // feed carries; we show it too if the public API ever offers it.
-  const STONE = [[-9, 0], [-9.8, 7], [-9.1, 15], [-7.8, 21.5], [-5.6, 27.5], [-2.6, 31.2], [0.8, 32], [3.4, 30.4],
-    [5.9, 25.8], [7.6, 19.5], [9.1, 12.5], [9.7, 5], [9.2, 0]];
+  const STONE = [[-9, 0], [-10, 11], [-6.5, 24], [-2.5, 31.5], [2.8, 32], [6.8, 24.5], [8, 17.5], [10, 7.5], [9, 0]];
   function stone(x, ground) {
     const t = still ? 0 : performance.now();
     const pulse = 0.75 + 0.25 * Math.sin(t / 1400);
@@ -1015,7 +1023,7 @@ ${beacon}
       // stands free so you can see through its arch.
       if (b.x < roostX + 26 && b.x + b.w > roostX - 26) continue;
       if (b.x < cx + 30 && b.x + b.w > cx - 30) continue;
-      if (b.x < catX + 48 && b.x + b.w > catX - 48) continue;
+      if (b.cat) continue;
       if (b.x < stoneX + 14 && b.x + b.w > stoneX - 14) continue;
       ctx.beginPath();
       ctx.moveTo(b.x, ground); ctx.lineTo(b.x, ground - b.h);
