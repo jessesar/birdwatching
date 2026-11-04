@@ -576,7 +576,7 @@ footer{max-width:980px;margin:72px auto 0;padding-block:32px 56px;border-top:1px
 .ours-intro{margin:0;color:#cfc7bd;max-width:calc(62ch + 2 * var(--edge))}
 ul.ours-cards{list-style:none;margin:14px 0 0;padding:4px var(--edge) 8px;display:flex;gap:24px;align-items:stretch;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-inline:var(--edge);scrollbar-width:none}
 .ourtest{flex:0 0 min(330px,82vw);scroll-snap-align:start;display:flex;flex-direction:column;gap:12px;padding:22px 22px 24px;border:1px solid var(--rule);border-radius:14px;background:linear-gradient(#15110e,#120e0b)}
-.ourtest .seen-so-far{margin-top:auto;padding-top:6px}
+.ourtest .seen-so-far{padding-top:6px}
 .ourtest .test-icon{color:var(--lamp)}
 .ourtest .test-name{font-weight:600;font-size:15px}
 .ourtest .plan{color:#cfc7bd}
