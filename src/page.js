@@ -23,6 +23,17 @@ const STAR_POSITIONS = { edges: [11, 64], time: [29, 47], shops: [50, 40], money
 // Sightings the model hasn't read (yet) say so; the model's are the default.
 const byKeywords = (row) => (row.tagged_by === "keywords" ? ", keyword match" : "");
 
+// Line drawings for the five tests, from his own world. Parts animate on hover.
+const ICONS = {
+  edges: `<path d="M4 34h27"/><path class="ico-move" d="M8 26c0-5 4-8 9-8 3 0 5 1 6 3l4-1-3 3c0 5-4 8-9 8-4 0-7-2-7-5zM13 33v1.5M17 33v1.5"/><circle class="ico-move" cx="21.5" cy="20.5" r=".7" fill="currentColor"/><path d="M34 6v28" stroke-dasharray="2 3"/>`,
+  time: `<path d="M13 35V14l7-8 7 8v21z"/><circle cx="20" cy="19" r="4.2"/><path class="ico-hand" d="M20 19v-3"/><path d="M20 19l2 1.2M17 35v-7h6v7"/>`,
+  shops: `<path d="M5 14l3-6h24l3 6z"/><path d="M7 14v21h26V14M17 35v-9h6v9"/><g class="ico-bell"><path d="M29.5 17v2"/><path d="M27.5 23a2 2 0 0 1 4 0z"/></g>`,
+  money: `<path d="M6 25c4-8 22-8 26 0-3 4-8 6-13 6s-10-2-13-6z"/><path d="M14 20l2 9M19 19v11M24 20l-2 9"/><g class="ico-coin"><circle cx="31" cy="10" r="4"/><path d="M31 8v4"/></g>`,
+  sky: `<path d="M25 7a11 11 0 1 0 8.5 18.5A9 9 0 1 1 25 7z"/><path class="ico-star" d="M10 6q.8 4.2 5 5-4.2.8-5 5-.8-4.2-5-5 4.2-.8 5-5z"/>`,
+};
+const icon = (key) =>
+  `<svg class="test-icon" viewBox="0 0 40 40" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${ICONS[key] ?? ""}</svg>`;
+
 // A clear sighting lights a star; a glimmer only makes it glimmer.
 const seenText = (n, g = 0) =>
   n ? (n === 1 ? "seen once" : `seen ${n} times`) : g ? (g === 1 ? "a glimmer" : `${g} glimmers`) : "not yet seen";
@@ -79,7 +90,8 @@ function testItem(test, data) {
   const log = test.sightings.length
     ? `<p class="logtitle">In his feed, ${seenText(test.seen, test.glimmers)}</p><ul class="log">${test.sightings.map(sighting).join("")}</ul>`
     : `<p class="quiet">Nothing in his feed has touched this yet. The star above stays dim until it does.</p>`;
-  return `<li class="test" id="${test.key}">
+  return `<li class="test${test.seen ? " seen" : test.glimmers ? " glimmering" : ""}" id="${test.key}">
+  ${icon(test.key)}
   <p class="test-name"><i class="dot${test.seen ? " lit" : test.glimmers ? " glimmer" : ""}" aria-hidden="true"></i>${esc(test.name)}<span>${seenText(test.seen, test.glimmers)}</span></p>
   <p class="claim">${esc(test.claim)}</p>
   <p class="plan"><span>How he means to test it.</span> ${esc(test.plan)}</p>
@@ -204,6 +216,12 @@ h1{font:500 clamp(30px,5.4vw,52px)/1.05 var(--text);letter-spacing:-.015em;margi
 .mark span{font-weight:600;font-size:14px}
 .mark small{font-size:12px;color:var(--ash)}
 .mark:hover span{color:var(--lamp)}
+.roost-label{position:absolute;z-index:3;transform:translate(-50%,-100%);display:grid;justify-items:center;gap:1px;text-align:center;line-height:1.25;white-space:nowrap;cursor:help;padding:2px 6px}
+.roost-label b{font-weight:600;font-size:13px}
+.roost-label span{font-size:12px;color:var(--ash)}
+.roost-label q{display:none;white-space:normal;width:min(260px,70vw);font-size:13px;color:var(--ivory);background:rgba(13,10,8,.88);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;margin-top:6px}
+.roost-label:hover q,.roost-label:focus q{display:block}
+.roost-label:focus-visible{outline:2px solid var(--lamp);outline-offset:3px;border-radius:4px}
 /* The star itself is part of the link: a round hit area over it, above the label. */
 .mark::before{content:"";position:absolute;left:50%;top:-34px;width:40px;height:40px;transform:translateX(-50%);border-radius:50%}
 
@@ -240,6 +258,20 @@ q{quotes:"“" "”"}
 ol.tests{list-style:none;margin:0;padding:4px var(--edge) 8px;display:flex;gap:28px;align-items:start;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-inline:var(--edge);scrollbar-width:none}
 .test{flex:0 0 min(380px,82vw);display:grid;gap:12px;align-content:start;scroll-snap-align:start;padding:22px 22px 24px;border:1px solid var(--rule);border-radius:14px;background:linear-gradient(#15110e,#120e0b)}
 .test-name{margin:0;display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px}
+.test-icon{width:46px;height:46px;color:rgba(243,239,233,.55);transition:color .6s ease}
+.test.glimmering .test-icon{color:rgba(242,196,109,.7)}
+.test.seen .test-icon{color:var(--lamp);filter:drop-shadow(0 0 6px rgba(242,196,109,.35))}
+.test-icon *{transform-box:fill-box}
+.test:hover .ico-move{animation:hop .5s ease-in-out 2}
+.test:hover .ico-hand{transform-origin:50% 100%;animation:tick 2.4s steps(8) infinite}
+.test:hover .ico-bell{transform-origin:50% 0;animation:swing .7s ease-in-out 3}
+.test:hover .ico-coin{transform-origin:50% 50%;animation:flip 1s ease-in-out 1}
+.test:hover .ico-star{transform-origin:50% 50%;animation:twinkle 1.2s ease-in-out infinite}
+@keyframes hop{50%{transform:translate(2px,-2px)}}
+@keyframes tick{to{transform:rotate(360deg)}}
+@keyframes swing{25%{transform:rotate(14deg)}75%{transform:rotate(-14deg)}}
+@keyframes flip{50%{transform:scaleX(-1)}}
+@keyframes twinkle{50%{transform:scale(1.35);opacity:.6}}
 .test-name span{margin-left:auto;color:var(--ash);font-weight:400;font-size:13px}
 .dot{width:9px;height:9px;border-radius:50%;border:1px solid rgba(243,239,233,.45);display:inline-block}
 .dot.lit{border:0;background:#fff6df;box-shadow:0 0 10px 3px rgba(242,196,109,.5)}
@@ -323,7 +355,7 @@ footer a{text-underline-offset:3px}
   .dive.live .dive-stage h2{font-size:24px}
   .dive.live .dive-art{max-height:27svh}
 }
-@media (prefers-reduced-motion:reduce){.roost-glow{animation:none}}
+@media (prefers-reduced-motion:reduce){.roost-glow{animation:none}.test:hover .test-icon *{animation:none!important}}
 @media (max-width:560px){
   body{font-size:16px}
   .mark span{font-size:13px}.mark small{display:none}
@@ -353,6 +385,7 @@ footer a{text-underline-offset:3px}
     <p class="sub"><span>An observatory for the five tests on Pino’s page <a href="https://pino-the-bird.github.io/limits/">Testing the Town’s Walls</a>.</span> <span>Each star is one test. It brightens when his words touch it.</span></p>
   </div>
   ${marks(data)}
+  <div class="roost-label" id="roost-label" tabindex="0"><b>Pino’s roost</b><span id="roost-state">${data.now?.asleep ? "asleep" : "awake"}</span><q id="roost-thought">${esc(data.now?.thought ?? "")}</q></div>
 </header>
 
 <section class="ground gutter" aria-label="His town now, and his clock beside ours">
@@ -635,13 +668,80 @@ ${data.tests.map((t) => testItem(t, data)).join("\n")}
       hand(((mins / 60) % 12) / 12 * 6.283, 7, 2.2);
       hand((mins % 60) / 60 * 6.283, 10.5, 1.4);
     }
-    // His roost: a window to the right of the tower, lit while he's awake.
-    ctx.fillStyle = D.asleep ? "#2a221b" : "#ffd27a";
-    ctx.fillRect(cx + tw / 2 + 22, ground - 34, 7, 9);
+    roost(cx + tw / 2 + 46, ground);
+  }
+
+  // Pino's roost: a birdhouse on a pole beside the tower. Its round window glows
+  // while he's awake; asleep it goes dark and z's drift up from it.
+  let roostAt = null;
+  function roost(x, ground) {
+    const poleTop = ground - 46, bw = 24, bh = 20, top = poleTop - bh;
+    ctx.fillStyle = "#0d0a08";
+    ctx.fillRect(x - 1.5, poleTop, 3, ground - poleTop);
+    ctx.fillRect(x - bw / 2, top, bw, bh);
+    ctx.beginPath(); ctx.moveTo(x - bw / 2 - 5, top + 1); ctx.lineTo(x, top - 14); ctx.lineTo(x + bw / 2 + 5, top + 1); ctx.fill();
+    ctx.fillRect(x - 5, top + bh - 4, 10, 2.5);
+    const hx = x, hy = top + bh / 2 - 1;
+    roostAt = { x: hx, y: top - 14 };
+    if (D.asleep) {
+      ctx.fillStyle = "#2a221b"; ctx.beginPath(); ctx.arc(hx, hy, 4.5, 0, 6.283); ctx.fill();
+      ctx.strokeStyle = "rgba(242,196,109,0.35)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(hx, hy, 4.5, 0, 6.283); ctx.stroke();
+      if (!still) zs(hx, hy);
+    } else {
+      const glow = ctx.createRadialGradient(hx, hy, 0, hx, hy, 22);
+      glow.addColorStop(0, "rgba(255,210,122,0.55)"); glow.addColorStop(1, "rgba(255,210,122,0)");
+      ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(hx, hy, 22, 0, 6.283); ctx.fill();
+      ctx.fillStyle = "#ffd27a"; ctx.beginPath(); ctx.arc(hx, hy, 4.5, 0, 6.283); ctx.fill();
+    }
+  }
+  function zs(x, y) {
+    const t = performance.now();
+    ctx.textAlign = "center";
+    for (let i = 0; i < 3; i++) {
+      const p = ((t / 3200) + i / 3) % 1;
+      ctx.fillStyle = "rgba(243,239,233," + 0.75 * Math.sin(p * Math.PI) + ")";
+      ctx.font = "600 " + (8 + p * 7) + "px 'Hanken Grotesk', sans-serif";
+      ctx.fillText("z", x + 8 + p * 16 + Math.sin(p * 6) * 3, y - 14 - p * 40);
+    }
+  }
+
+  // His sky follows his town clock: night, dawn, day and dusk on his time.
+  // Keyframes by town hour: [hour, zenith, middle, horizon, starlight].
+  const SKY = [
+    [0, "#0b0e19", "#141223", "#1d1611", 1],
+    [4.5, "#0b0e19", "#141223", "#1d1611", 1],
+    [6, "#1b2245", "#4b3c63", "#c4835a", 0.45],
+    [8, "#28497a", "#5577a0", "#b8a48a", 0.08],
+    [16.5, "#28497a", "#5577a0", "#b8a48a", 0.08],
+    [18.5, "#211f45", "#5c3c62", "#cf7a4c", 0.35],
+    [20.5, "#0b0e19", "#141223", "#1d1611", 1],
+    [24, "#0b0e19", "#141223", "#1d1611", 1],
+  ];
+  const hex = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+  const mix = (a, b, f) => "rgb(" + hex(a).map((v, i) => Math.round(v + (hex(b)[i] - v) * f)).join(",") + ")";
+  function skyNow() {
+    const m = townMinutesNow();
+    const hour = m == null ? 0 : ((((m % 1440) + 1440) % 1440) / 60);
+    const i = SKY.findIndex((k, j) => j < SKY.length - 1 && hour >= k[0] && hour < SKY[j + 1][0]);
+    const [h0, z0, m0, g0, s0] = SKY[i], [h1, z1, m1, g1, s1] = SKY[i + 1];
+    const f = (hour - h0) / (h1 - h0);
+    return { zenith: mix(z0, z1, f), middle: mix(m0, m1, f), horizon: mix(g0, g1, f), stars: s0 + (s1 - s0) * f };
+  }
+
+  const roostLabel = document.getElementById("roost-label");
+  function placeRoostLabel() {
+    if (!roostAt) return;
+    roostLabel.style.left = roostAt.x + "px";
+    roostLabel.style.top = roostAt.y - 8 + "px";
+    document.getElementById("roost-state").textContent = D.asleep ? "asleep" : "awake";
   }
 
   function frame(t) {
     ctx.clearRect(0, 0, W, H);
+    const sky = skyNow();
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, sky.zenith); grad.addColorStop(0.45, sky.middle); grad.addColorStop(1, sky.horizon);
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
     // Scrolling adds depth: the sky drifts slower than the town and keeps turning.
     const sy = still ? 0 : Math.min(scrollY, H);
     const turn = still ? 0 : (t / TURN_MS) * 6.283 + sy * 0.0008, top = H * 0.86;
@@ -650,7 +750,7 @@ ${data.tests.map((t) => testItem(t, data)).join("\n")}
       if (x < 0 || x > W || y < 0 || y > top) continue;
       const appear = intro ? Math.max(0, Math.min(1, (t - s.born) / 700)) : 1;
       if (!appear) continue;
-      const a = appear * (still ? s.a : s.a * (0.7 + 0.3 * Math.sin(t / 1000 * s.v + s.p)));
+      const a = sky.stars * appear * (still ? s.a : s.a * (0.7 + 0.3 * Math.sin(t / 1000 * s.v + s.p)));
       ctx.fillStyle = "rgba(243,239,233," + a + ")";
       ctx.fillRect(x, y, s.s, s.s);
     }
@@ -658,6 +758,7 @@ ${data.tests.map((t) => testItem(t, data)).join("\n")}
     constellation(t);
     if (!still) { shootingStar(t); windows(t); }
     skyline();
+    placeRoostLabel();
   }
 
   // The two clocks on the ground. Minutes are fractional, so every hand sweeps;
@@ -773,6 +874,7 @@ ${data.tests.map((t) => testItem(t, data)).join("\n")}
         : "In his town now, asleep. His town shows no time while he sleeps";
       nowEl.innerHTML = '<span class="when">' + when + "</span>" + esc(n.doing) + ". <q>" + esc(n.thought) + "</q>" + quiet;
       D.asleep = Boolean(n.asleep);
+      document.getElementById("roost-thought").textContent = n.thought ?? "";
     }
     if (d.lastReading) D.last = d.lastReading;
     const measured = d.clock && d.clock.verdict.state !== "measuring";
@@ -793,6 +895,8 @@ ${data.tests.map((t) => testItem(t, data)).join("\n")}
       card?.querySelector(".test-name span")?.replaceChildren(label);
       card?.querySelector(".dot")?.classList.toggle("lit", t.seen > 0);
       card?.querySelector(".dot")?.classList.toggle("glimmer", !t.seen && t.glimmers > 0);
+      card?.classList.toggle("seen", t.seen > 0);
+      card?.classList.toggle("glimmering", !t.seen && t.glimmers > 0);
     });
     if (more) notice.hidden = false;
   }
