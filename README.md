@@ -131,7 +131,7 @@ hour of steady readings.
 | `src/ours.js` | Our tests on him: sleep, rest, his body, promises, boredom, persistence, needing others |
 | `src/page.js` | The page: sky and roost, clocks and tiny Pino, the dive, the cards, live refresh |
 | `migrations/` | D1 schema |
-| `public/` | The favicon and the social preview image (`og.png`, a frame of the live sky) |
+| `public/` | The favicon and the social preview image (`og.png`, a frame of the live sky at dusk, `?sky=dusk`) |
 | `alias/` | A tiny Worker that serves the observatory's first address, `pino-observatory`, by forwarding to `birdwatching` |
 | `test/` | Tests for the logic, the collector, the judging and the page (`npm test`) |
 

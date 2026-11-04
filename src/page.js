@@ -353,14 +353,14 @@ export function renderPage(data, options = {}) {
 <meta property="og:title" content="${SHARE_TITLE}">
 <meta property="og:description" content="${SHARE_DESCRIPTION}">
 <meta property="og:url" content="${SITE}/">
-<meta property="og:image" content="${SITE}/og.png?v=2">
+<meta property="og:image" content="${SITE}/og.png?v=3">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="A night sky over Pino’s town: his five tests drawn as a constellation, one star lit.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${SHARE_TITLE}">
 <meta name="twitter:description" content="${SHARE_DESCRIPTION}">
-<meta name="twitter:image" content="${SITE}/og.png?v=2">
+<meta name="twitter:image" content="${SITE}/og.png?v=3">
 <script type="application/ld+json">${JSON.stringify({
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -1158,10 +1158,11 @@ ${beacon}
   ];
   const hex = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
   const mix = (a, b, f) => "rgb(" + hex(a).map((v, i) => Math.round(v + (hex(b)[i] - v) * f)).join(",") + ")";
-  // ?sky=night shows his sky at night whatever his clock says (for the preview image).
-  const forceNight = new URLSearchParams(location.search).get("sky") === "night";
+  // ?sky=night|dawn|day|dusk shows his sky at that hour whatever his clock says
+  // (for the preview image).
+  const forced = { night: 0, dawn: 6.3, day: 12, dusk: 18.6 }[new URLSearchParams(location.search).get("sky")];
   function skyNow() {
-    const m = forceNight ? 0 : townMinutesNow();
+    const m = forced != null ? forced * 60 : townMinutesNow();
     const hour = m == null ? 0 : ((((m % 1440) + 1440) % 1440) / 60);
     const i = SKY.findIndex((k, j) => j < SKY.length - 1 && hour >= k[0] && hour < SKY[j + 1][0]);
     const [h0, z0, m0, g0, s0] = SKY[i], [h1, z1, m1, g1, s1] = SKY[i + 1];
