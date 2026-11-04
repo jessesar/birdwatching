@@ -1124,7 +1124,9 @@ ${ourTests(data)}
     const rad = perch === "pin" ? 0 : (deg[perch] * Math.PI) / 180;
     const steep = Math.abs(Math.cos(rad));
     const tipR = perch === "pin" ? 0 : HANDS[perch] - 4;
-    const downhillFor = (dir) => perch !== "pin" && dir * -Math.cos(rad) > 0.05;
+    // Only a real slope (about 20 degrees or more) is worth sliding down; on a
+    // gentle one he walks.
+    const downhillFor = (dir) => perch !== "pin" && dir * -Math.cos(rad) > 0.34;
     // Climbing is slower the steeper it is; sliding speeds up the steeper it is.
     const climb = WALK * (1 - 0.6 * steep);
     const pull = GLIDE_ACC * Math.max(0.25, steep);
