@@ -835,44 +835,41 @@ ${beacon}
     };
   }
 
-  // The big cat (white in his town, a dark shape in ours): sitting back on its
-  // knees, a big round head with pointed ears, both arms held out, palms up,
-  // as if to say "well?"
+  // The big cat (white in his town, a dark shape in ours), seen from the front:
+  // kneeling upright, a big round head with pointed ears, both arms held out
+  // with the palms up, as if to say "well?"
   function cat(x, ground) {
     // About half as tall as the clock tower, roof included: it's big in his town.
     const k = 1.75;
     ctx.save(); ctx.translate(x, ground); ctx.scale(k, k);
     ctx.fillStyle = ctx.strokeStyle = "#0d0a08"; ctx.lineCap = ctx.lineJoin = "round";
     const blob = (ex, ey, rx, ry, rot = 0) => { ctx.beginPath(); ctx.ellipse(ex, ey, rx, ry, rot, 0, 6.283); ctx.fill(); };
-    // Knees folded under, side by side, and a tail curling round the left.
-    blob(-6.5, -4.5, 8, 4.5); blob(6.5, -4.5, 8, 4.5); blob(-15, -2.5, 5, 2.5, 0.2);
-    // An upright body, wider at the hips.
-    ctx.beginPath();
-    ctx.moveTo(-12, -5);
-    ctx.bezierCurveTo(-12.5, -15, -9, -24, -5.5, -29);
-    ctx.lineTo(5.5, -29);
-    ctx.bezierCurveTo(9, -24, 12.5, -15, 12, -5);
-    ctx.closePath(); ctx.fill();
-    // Arms out: the left raised with the palm up, the right held out further.
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(-6, -25); ctx.quadraticCurveTo(-14, -25, -17, -30);
-    ctx.moveTo(6, -24); ctx.quadraticCurveTo(15, -22, 20, -24);
-    ctx.stroke();
-    blob(-18, -32.5, 2.4, 3.6, 0.15);   // left open hand, fingers up
-    blob(23, -25.2, 4.2, 1.9, -0.15);   // right palm up
-    // A big head, wider than tall, with full cheeks.
-    blob(0, -37, 12.5, 10); blob(-7, -32.5, 6, 4.5); blob(7, -32.5, 6, 4.5);
-    // Ears: the left upright, the right tipped outwards.
-    ctx.beginPath();
-    ctx.moveTo(-12, -39.5); ctx.lineTo(-9.5, -52.5); ctx.lineTo(-3, -45.5); ctx.closePath();
-    ctx.moveTo(4, -45.5); ctx.lineTo(14, -51); ctx.lineTo(12.5, -38.5); ctx.closePath();
-    ctx.fill();
+    for (const side of [-1, 1]) {
+      // One half of the body, from the neck down to a knee on the ground.
+      ctx.beginPath();
+      ctx.moveTo(-side * 0.5, -31);
+      ctx.quadraticCurveTo(side * 7.5, -31, side * 8, -27);
+      ctx.bezierCurveTo(side * 8.5, -24, side * 7.5, -16, side * 9, -9);
+      ctx.bezierCurveTo(side * 10.5, -4, side * 10, 0, side * 6.5, 0);
+      ctx.lineTo(side * 1.2, 0);
+      ctx.quadraticCurveTo(side * 0.6, -4.5, -side * 0.5, -7.5);
+      ctx.closePath(); ctx.fill();
+      // An arm out to the side, a little low, and an open hand turned up.
+      ctx.lineWidth = 4.2;
+      ctx.beginPath(); ctx.moveTo(side * 6, -26.5); ctx.quadraticCurveTo(side * 13, -24.5, side * 19, -27); ctx.stroke();
+      blob(side * 22, -28.5, 4.6, 2.2, -side * 0.35);
+      // An upright pointed ear.
+      ctx.beginPath(); ctx.moveTo(side * 9.8, -42); ctx.lineTo(side * 9.6, -52.5); ctx.lineTo(side * 3.5, -48); ctx.closePath(); ctx.fill();
+    }
+    // A big head, a little wider than tall, with full cheeks.
+    blob(0, -40.5, 10.3, 9.8); blob(-4.2, -35.5, 6, 4.6); blob(4.2, -35.5, 6, 4.6);
     ctx.restore();
   }
 
   // The glowing stone. In his town it shows a number that only his live world
   // feed carries; we show it too if the public API ever offers it.
+  const STONE = [[-9, 0], [-9.8, 7], [-9.1, 15], [-7.8, 21.5], [-5.6, 27.5], [-2.6, 31.2], [0.8, 32], [3.4, 30.4],
+    [5.9, 25.8], [7.6, 19.5], [9.1, 12.5], [9.7, 5], [9.2, 0]];
   function stone(x, ground) {
     const t = still ? 0 : performance.now();
     const pulse = 0.75 + 0.25 * Math.sin(t / 1400);
@@ -880,9 +877,9 @@ ${beacon}
     glow.addColorStop(0, "rgba(120,240,190," + 0.32 * pulse + ")"); glow.addColorStop(1, "rgba(120,240,190,0)");
     ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(x, ground - 14, 30, 0, 6.283); ctx.fill();
     ctx.fillStyle = "#1f5546";
-    ctx.beginPath(); ctx.moveTo(x - 9, ground);
-    ctx.bezierCurveTo(x - 10, ground - 18, x - 6, ground - 31, x + 1, ground - 31);
-    ctx.bezierCurveTo(x + 7, ground - 30, x + 10, ground - 17, x + 9, ground); ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    for (const [px, py] of STONE) ctx.lineTo(x + px, ground - py);
+    ctx.closePath(); ctx.fill();
     ctx.strokeStyle = "rgba(150,250,205," + 0.55 * pulse + ")"; ctx.lineWidth = 1; ctx.stroke();
     if (D.visitors != null) {
       ctx.fillStyle = "rgba(215,255,235,0.9)"; ctx.textAlign = "center";
