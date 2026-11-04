@@ -246,11 +246,13 @@ const ABOUT = {
 };
 const clip = (t, n) => (t.length > n ? t.slice(0, n - 1).replace(/\s+\S*$/, "") + "…" : t);
 
-// The star's tooltip: what the test is about, or a line on the latest sighting.
+// The star's tooltip: what the test is about, then its latest sighting and when.
 function tip(t) {
   const s = t.sightings?.[0];
-  if (!s) return ABOUT[t.key] ?? "";
-  return `${s.glimmer ? "Latest glimmer" : "Latest sighting"}: ${s.reason ? s.reason : `“${clip(s.text, 110)}”`}`;
+  const about = `<span class="tip-about">${esc(ABOUT[t.key] ?? "")}</span>`;
+  if (!s) return about;
+  const line = `${s.glimmer ? "Latest glimmer" : "Latest sighting"}: ${s.reason ? s.reason : `“${clip(s.text, 110)}”`}`;
+  return `${about}<span class="tip-seen">${esc(line)}</span><b class="tip-when" data-at="${esc(s.at)}">${utc(s.at)}</b>`;
 }
 
 function marks(data) {
@@ -258,8 +260,7 @@ function marks(data) {
     .map((t) => {
       const [x, y] = STAR_POSITIONS[t.key];
       const side = x < 25 ? " tip-left" : x > 75 ? " tip-right" : "";
-      const at = t.sightings?.[0]?.at;
-      return `<a class="mark${side}" href="#${t.key}" style="left:${x}%;top:${y}%"><span>${esc(t.name)}</span><small>${seenText(t.seen, t.glimmers)}</small><em class="tip">${at ? `<b class="tip-when" data-at="${esc(at)}">${utc(at)}</b>` : ""}${esc(tip(t))}</em></a>`;
+      return `<a class="mark${side}" href="#${t.key}" style="left:${x}%;top:${y}%"><span>${esc(t.name)}</span><small>${seenText(t.seen, t.glimmers)}</small><em class="tip">${tip(t)}</em></a>`;
     })
     .join("");
 }
@@ -299,7 +300,8 @@ const dial = (id, label) => `<figure class="dial">
     <line id="${id}-h" class="hand hour" x1="0" y1="6" x2="0" y2="-28"/>
     <line id="${id}-m" class="hand minute" x1="0" y1="8" x2="0" y2="-44"/>
     <line id="${id}-s" class="hand second" x1="0" y1="12" x2="0" y2="-48"/>
-    <circle r="2.6" class="pin"/>
+    <circle r="2.6" class="pin"/>${id === "tc" ? `
+    <g id="tiny-pino" class="tiny-pino" aria-hidden="true"><path d="M-3.4 0c0-2.3 1.7-3.6 3.6-3.6 1.3 0 2.2.5 2.7 1.3l1.9-.4-1.3 1.3c0 2.2-1.8 3.5-3.9 3.5S-3.4 1.6-3.4 0z"/><path d="M-3.2-.6l-2.6-1.5.4 2.4z"/><circle cx="1.9" cy="-1.9" r=".45" class="eye"/></g>` : ""}
   </svg>
   <figcaption id="${id}-cap"><span>${label}</span><b id="${id}-t">--:--</b><small id="${id}-d"></small></figcaption>
 </figure>`;
@@ -391,7 +393,9 @@ h1{font:500 clamp(30px,5.4vw,52px)/1.05 var(--text);letter-spacing:-.015em;margi
 .mark small{font-size:12px;color:var(--ash)}
 .mark:hover span{color:var(--lamp)}
 .mark .tip{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);width:max-content;max-width:min(240px,70vw);white-space:normal;text-align:left;font-style:normal;font-size:13px;line-height:1.45;color:var(--ivory);background:rgba(13,10,8,.9);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;opacity:0;pointer-events:none;transition:opacity .2s ease}
-.mark .tip-when{display:block;color:var(--lamp);font-weight:500;font-size:12px;margin-bottom:3px}
+.mark .tip-about{display:block;color:#cfc7bd}
+.mark .tip-seen{display:block;margin-top:8px;padding-top:8px;border-top:1px solid var(--rule)}
+.mark .tip-when{display:block;color:var(--lamp);font-weight:500;font-size:12px;margin-top:4px}
 .mark.tip-left .tip{left:0;transform:none}
 .mark.tip-right .tip{left:auto;right:0;transform:none}
 .mark:hover .tip,.mark:focus-visible .tip{opacity:1}
@@ -439,6 +443,8 @@ q{quotes:"“" "”"}
 .second{stroke:var(--ash);stroke-width:.9}
 #town .minute,#town .hour,#town .second{stroke:var(--lamp)}
 #town{transition:opacity 1s ease}
+.tiny-pino path{fill:var(--lamp)}
+.tiny-pino .eye{fill:#15110e}
 #town.asleep{opacity:.45}
 .pin{fill:var(--ivory)}
 .dial figcaption{display:grid;font-size:14px;color:var(--ash)}
@@ -782,7 +788,7 @@ ${ourTests(data)}
   // On load the constellation traces itself from Edges to Sky, lighting each
   // test's star as the line reaches it.
   const intro = !still;
-  const TRACE_MS = intro ? 2000 : 0, TRACE_DELAY = intro ? 700 : 0;
+  const TRACE_MS = intro ? 1400 : 0, TRACE_DELAY = intro ? 450 : 0;
   const marks = [...document.querySelectorAll(".mark")];
   if (intro) marks.forEach((m) => (m.style.opacity = 0));
   function constellation(t) {
@@ -1012,12 +1018,44 @@ ${ourTests(data)}
     if (label.textContent !== text) label.textContent = text;
     if (below.textContent !== second) below.textContent = second;
   }
+  // Tiny Pino perches on the tip of a hand of his town clock. When his hand tips
+  // down far enough that he'd slide off, he hops to the other hand; if both
+  // point down he waits on the pin. Asleep, he sits on the pin.
+  const tiny = document.getElementById("tiny-pino");
+  const HANDS = { m: 44, h: 28 };
+  let perch = "m", hop = null, shown = null;
+  const tip = (deg, len) => [Math.sin((deg * Math.PI) / 180) * len, -Math.cos((deg * Math.PI) / 180) * len];
+  const upright = (deg) => { const d = ((deg % 360) + 360) % 360; return d < 100 || d > 260; };
+  function placeTiny(mins) {
+    if (!tiny) return;
+    const deg = { m: (mins % 60) * 6, h: ((mins / 60) % 12) * 30 };
+    const spot = (p) => (p === "pin" ? [0, -2.6] : tip(deg[p], HANDS[p] - 2));
+    let want = perch;
+    if (D.asleep || still) want = "pin";
+    else if (perch === "pin" || !upright(deg[perch])) want = upright(deg.m) ? "m" : upright(deg.h) ? "h" : "pin";
+    const now = performance.now();
+    if (want !== perch && !hop) { hop = { from: shown ?? spot(perch), start: now }; perch = want; }
+    let [x, y] = spot(perch);
+    if (hop) {
+      const k = Math.min(1, (now - hop.start) / 450), e = k * k * (3 - 2 * k);
+      x = hop.from[0] + (x - hop.from[0]) * e;
+      y = hop.from[1] + (y - hop.from[1]) * e - Math.sin(k * Math.PI) * 9;
+      if (k === 1) hop = null;
+    }
+    shown = [x, y];
+    const facing = perch === "pin" ? 1 : (x >= 0 ? 1 : -1);
+    tiny.setAttribute("transform", "translate(" + x.toFixed(2) + " " + (y - 3.6).toFixed(2) + ") scale(" + facing + " 1)");
+  }
+
   const ourDate = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", day: "numeric", month: "long", year: "numeric" });
   function dials() {
     const now = new Date();
     setDial(ours, now.getUTCHours() * 60 + now.getUTCMinutes() + (now.getUTCSeconds() + now.getUTCMilliseconds() / 1000) / 60, ourDate.format(now), true);
     const m = townMinutesNow();
-    if (m != null) setDial(his, ((m % 1440) + 1440) % 1440, D.asleep ? "asleep, day " + Math.floor(m / 1440) : "day " + Math.floor(m / 1440), Boolean(D.rate) && !D.asleep);
+    if (m != null) {
+      setDial(his, ((m % 1440) + 1440) % 1440, D.asleep ? "asleep, day " + Math.floor(m / 1440) : "day " + Math.floor(m / 1440), Boolean(D.rate) && !D.asleep);
+      placeTiny(((m % 1440) + 1440) % 1440);
+    }
     his[2].setAttribute("visibility", D.rate && !D.asleep ? "visible" : "hidden");
     townBox.classList.toggle("asleep", D.asleep);
   }
