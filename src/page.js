@@ -395,7 +395,7 @@ a:focus-visible{outline:2px solid var(--lamp);outline-offset:3px;border-radius:2
 .gutter{padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
 
 /* Not clipped, and above the section below, so a low star's tooltip can hang over it. */
-.sky{position:relative;z-index:3;height:clamp(460px,72vh,680px);background:linear-gradient(var(--zenith) 0%,#141223 45%,var(--horizon) 100%)}
+.sky{position:relative;z-index:3;overflow-x:clip;height:clamp(460px,72vh,680px);background:linear-gradient(var(--zenith) 0%,#141223 45%,var(--horizon) 100%)}
 .sky canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 /* Text in the sky keeps a soft shadow, so it stays readable by day. */
 .masthead,.mark,.roost-label{text-shadow:0 1px 3px rgba(8,10,20,.55)}
@@ -423,6 +423,7 @@ h1{font:500 clamp(30px,5.4vw,52px)/1.05 var(--text);letter-spacing:-.015em;margi
 .mark .tip-when{display:block;color:var(--lamp);font-weight:500;font-size:12px;margin-top:4px}
 .mark.tip-left .tip{left:0;transform:none}
 .mark.tip-right .tip{left:auto;right:0;transform:none}
+.mark .tip{translate:var(--nudge,0px) 0}
 .mark:hover .tip,.mark:focus-visible .tip,.mark.open .tip{opacity:1}
 .mark:hover,.mark:focus-visible,.mark.open{z-index:10}
 .mark .tip-more{display:none}
@@ -1457,6 +1458,21 @@ ${beacon}
     goToCard(i);
   }));
   document.addEventListener("click", (e) => { if (!e.target.closest(".mark")) marks.forEach((o) => o.classList.remove("open")); });
+  // Keep every tooltip inside the screen, so none hangs off the edge (and none
+  // makes the page wider than the phone).
+  function fitTips() {
+    const vw = document.documentElement.clientWidth;
+    for (const tip of document.querySelectorAll(".mark .tip")) {
+      tip.style.setProperty("--nudge", "0px");
+      const r = tip.getBoundingClientRect();
+      let d = 0;
+      if (r.right > vw - 8) d = vw - 8 - r.right;
+      if (r.left + d < 8) d = 8 - r.left;
+      tip.style.setProperty("--nudge", Math.round(d) + "px");
+    }
+  }
+  fitTips();
+  addEventListener("resize", fitTips);
   let queued = false;
   addEventListener("scroll", () => { if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; scrub(); }); } }, { passive: true });
   addEventListener("resize", () => { scrub(); scrubHis(); });
