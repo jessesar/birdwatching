@@ -702,14 +702,15 @@ ${ourTests(data)}
   // On load the constellation traces itself from Edges to Sky, lighting each
   // test's star as the line reaches it.
   const intro = !still;
-  const TRACE_MS = intro ? 2400 : 0, TRACE_DELAY = intro ? 900 : 0;
+  const TRACE_MS = intro ? 2000 : 0, TRACE_DELAY = intro ? 700 : 0;
   const marks = [...document.querySelectorAll(".mark")];
   if (intro) marks.forEach((m) => (m.style.opacity = 0));
   function constellation(t) {
     const pts = D.stars.map((s) => ({ ...s, x: (s.at[0] / 100) * W, y: (s.at[1] / 100) * H }));
     const legs = pts.slice(1).map((p, i) => Math.hypot(p.x - pts[i].x, p.y - pts[i].y));
     const total = legs.reduce((a, b) => a + b, 0);
-    const ease = (x) => 1 - Math.pow(1 - x, 3);
+    // A gentle ease: it settles at the end without crawling to the last star.
+    const ease = (x) => 1 - Math.pow(1 - x, 1.6);
     const progress = TRACE_MS ? ease(Math.max(0, Math.min(1, (t - TRACE_DELAY) / TRACE_MS))) : 1;
     let left = progress * total;
     ctx.strokeStyle = "rgba(243,239,233,0.16)"; ctx.lineWidth = 1;
