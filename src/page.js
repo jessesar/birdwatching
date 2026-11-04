@@ -19,6 +19,8 @@ const moonLine = (m) => `${m.phase}, ${Math.round(m.illumination * 100)}% lit`;
 // Where each test's star sits in the sky, as % of the sky's width and height.
 // Left to right in Pino's own order, along an arc like the rim of a dome.
 const STAR_POSITIONS = { edges: [11, 64], time: [29, 47], shops: [50, 40], money: [71, 47], sky: [89, 64] };
+// On a phone the title and subtitle take more room, so the constellation sits lower.
+const STAR_POSITIONS_PHONE = { edges: [12, 64], time: [30, 52], shops: [50, 46], money: [70, 52], sky: [88, 64] };
 
 // Sightings the model hasn't read (yet) say so; the model's are the default.
 const byKeywords = (row) => (row.tagged_by === "keywords" ? ", keyword match" : "");
@@ -267,7 +269,8 @@ function marks(data) {
     .map((t) => {
       const [x, y] = STAR_POSITIONS[t.key];
       const side = x < 25 ? " tip-left" : x > 75 ? " tip-right" : "";
-      return `<a class="mark${side}" href="#${t.key}" style="left:${x}%;top:${y}%"><span>${esc(t.name)}</span><small>${seenText(t.seen, t.glimmers)}</small><em class="tip">${tip(t)}<span class="tip-more">Read more</span></em></a>`;
+      const [, py] = STAR_POSITIONS_PHONE[t.key];
+      return `<a class="mark${side}" href="#${t.key}" style="left:${x}%;--top:${y}%;--top-phone:${py}%"><span>${esc(t.name)}</span><small>${seenText(t.seen, t.glimmers)}</small><em class="tip">${tip(t)}<span class="tip-more">Read more</span></em></a>`;
     })
     .join("");
 }
@@ -320,7 +323,7 @@ const skyData = (data) =>
     asleep: Boolean(data.now?.asleep),
     last: data.lastReading,
     rate: data.clock && data.clock.verdict.state !== "measuring" ? data.clock.rate : null,
-    stars: data.tests.map((t) => ({ key: t.key, seen: t.seen, glimmers: t.glimmers ?? 0, at: STAR_POSITIONS[t.key] })),
+    stars: data.tests.map((t) => ({ key: t.key, seen: t.seen, glimmers: t.glimmers ?? 0, at: STAR_POSITIONS[t.key], atPhone: STAR_POSITIONS_PHONE[t.key] })),
   }).replace(/</g, "\\u003c");
 
 export const SITE = "https://birdwatching.pino-observatory.workers.dev";
@@ -404,11 +407,12 @@ a:focus-visible{outline:2px solid var(--lamp);outline-offset:3px;border-radius:2
 h1{font:500 clamp(30px,5.4vw,52px)/1.05 var(--text);letter-spacing:-.015em;margin:0;text-wrap:balance;max-width:14ch}
 .masthead p.sub{color:var(--ash);margin:12px 0 0;max-width:62ch;font-size:15px;line-height:1.5}
 .masthead p.sub span{display:block}
-.visit{display:inline-block;margin-top:18px;padding:8px 16px;border:1px solid rgba(242,196,109,.7);border-radius:999px;color:var(--lamp);font-size:14px;font-weight:500;text-decoration:none;background:rgba(13,10,8,.25);transition:background .2s ease,color .2s ease}
+/* A quiet way out to his town, in the corner of the sky. */
+.visit{position:absolute;z-index:4;top:max(18px,env(safe-area-inset-top,0px));right:max(18px,env(safe-area-inset-right,0px));padding:6px 13px;border:1px solid rgba(242,196,109,.45);border-radius:999px;color:var(--lamp);font-size:13px;font-weight:500;text-decoration:none;background:rgba(13,10,8,.2);transition:background .2s ease,color .2s ease,border-color .2s ease}
 .visit:hover{background:var(--lamp);color:#1a140f;text-shadow:none}
 .visit:focus-visible{outline:2px solid var(--lamp);outline-offset:3px}
 .masthead p.sub a{text-decoration-color:var(--ash);text-underline-offset:3px}
-.mark{transition:opacity .6s ease;position:absolute;z-index:2;transform:translate(-50%,14px);text-align:center;text-decoration:none;display:grid;gap:1px;padding:4px 6px;line-height:1.25;white-space:nowrap}
+.mark{top:var(--top);transition:opacity .6s ease;position:absolute;z-index:2;transform:translate(-50%,14px);text-align:center;text-decoration:none;display:grid;gap:1px;padding:4px 6px;line-height:1.25;white-space:nowrap}
 .mark span{font-weight:600;font-size:14px}
 .mark small{font-size:12px;color:var(--ash)}
 .mark:hover>span{color:var(--lamp)}
@@ -609,6 +613,8 @@ footer a{text-underline-offset:3px}
   ul.needs{flex-wrap:wrap;gap:8px 14px}
   body{font-size:16px}
   .mark span{font-size:13px}.mark small{display:none}
+  .mark{top:var(--top-phone)}
+  .sky{height:clamp(580px,80svh,700px)}
 }
 @media (max-width:760px){
   footer{grid-template-columns:1fr;gap:28px}
@@ -634,8 +640,8 @@ footer a{text-underline-offset:3px}
     <p class="kana" lang="ja">ピノの観測所</p>
     <h1>Birdwatching</h1>
     <p class="sub"><span>An observatory for the five tests on Pino’s page <a href="https://pino-the-bird.github.io/limits/">Testing the Town’s Walls</a>.</span> <span>Each star is one test. It brightens when his words touch it.</span></p>
-    <a class="visit" href="https://pinos.world" target="_blank" rel="noopener">Visit Pino in his town</a>
   </div>
+  <a class="visit" href="https://pinos.world" target="_blank" rel="noopener">Visit Pino in his town</a>
   ${marks(data)}
   <div class="roost-label" id="roost-label"><b>Pino’s roost</b><span id="roost-state">${data.now?.asleep ? "asleep" : "awake"}</span></div>
 </header>
@@ -848,7 +854,7 @@ ${beacon}
   const marks = [...document.querySelectorAll(".mark")];
   if (intro) marks.forEach((m) => (m.style.opacity = 0));
   function constellation(t) {
-    const pts = D.stars.map((s) => ({ ...s, x: (s.at[0] / 100) * W, y: (s.at[1] / 100) * H }));
+    const pts = D.stars.map((s) => { const a = W <= 560 && s.atPhone ? s.atPhone : s.at; return { ...s, x: (a[0] / 100) * W, y: (a[1] / 100) * H }; });
     const legs = pts.slice(1).map((p, i) => Math.hypot(p.x - pts[i].x, p.y - pts[i].y));
     const total = legs.reduce((a, b) => a + b, 0);
     // A gentle ease: it settles at the end without crawling to the last star.
@@ -1054,7 +1060,8 @@ ${beacon}
       ctx.fillStyle = "rgba(243,239,233," + a + ")";
       ctx.fillRect(x, y, s.s, s.s);
     }
-    moon(W * (W < 560 ? 0.84 : 0.82), H * (W < 560 ? 0.3 : 0.22) + sy * 0.4, W < 560 ? 15 : 22);
+    // On a phone the moon hangs at the top right, beside the title, clear of the text.
+    moon(W * (W <= 560 ? 0.86 : 0.82), (W <= 560 ? 92 : H * 0.22) + sy * 0.4, W <= 560 ? 15 : 22);
     constellation(t);
     if (!still) { shootingStar(t); windows(t); }
     skyline();
