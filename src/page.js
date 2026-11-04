@@ -864,15 +864,15 @@ ${beacon}
     const t = still ? 0 : performance.now();
     const pulse = 0.75 + 0.25 * Math.sin(t / 1400);
     const glow = ctx.createRadialGradient(x, ground - 14, 0, x, ground - 14, 30);
-    glow.addColorStop(0, "rgba(236,230,244," + 0.14 * pulse + ")"); glow.addColorStop(1, "rgba(236,230,244,0)");
+    glow.addColorStop(0, "rgba(120,240,190," + 0.32 * pulse + ")"); glow.addColorStop(1, "rgba(120,240,190,0)");
     ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(x, ground - 14, 30, 0, 6.283); ctx.fill();
-    ctx.fillStyle = "#0d0a08";
+    ctx.fillStyle = "#1f5546";
     ctx.beginPath(); ctx.moveTo(x - 9, ground);
     ctx.bezierCurveTo(x - 10, ground - 18, x - 6, ground - 31, x + 1, ground - 31);
     ctx.bezierCurveTo(x + 7, ground - 30, x + 10, ground - 17, x + 9, ground); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = "rgba(236,230,244," + 0.3 * pulse + ")"; ctx.lineWidth = 1; ctx.stroke();
+    ctx.strokeStyle = "rgba(150,250,205," + 0.55 * pulse + ")"; ctx.lineWidth = 1; ctx.stroke();
     if (D.visitors != null) {
-      ctx.fillStyle = "rgba(236,230,244,0.85)"; ctx.textAlign = "center";
+      ctx.fillStyle = "rgba(215,255,235,0.9)"; ctx.textAlign = "center";
       ctx.font = "600 5px 'Hanken Grotesk', sans-serif";
       ctx.fillText(Number(D.visitors).toLocaleString("en-GB"), x, ground - 17);
     }
