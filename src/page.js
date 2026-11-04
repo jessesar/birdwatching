@@ -1023,8 +1023,9 @@ ${ourTests(data)}
   // Tiny Pino likes a hand lying near horizontal (within 50 degrees of three or
   // nine o'clock); steeper, up or down, is too exciting. He prefers the second
   // hand, which races round; when it gets steep he moves to the minute or hour
-  // hand (at random if both are comfortable). He doesn't rejoin the second hand
-  // every round: when it swings away he decides whether to go back next time.
+  // hand (at random if both are comfortable). There he settles in for a good
+  // while (6 to 14 seconds), until watching the second hand go round makes him
+  // curious enough to head back to it, when he can reach it in time.
   // He walks, and never floats upwards: uphill or level he waddles at his own
   // pace; downhill he glides, faster, leaning forward. All hands meet at the pin,
   // so to change hands he heads in along his hand, timed to reach the pin just as
@@ -1035,7 +1036,7 @@ ${ourTests(data)}
   const SIZE = 1.25, WALK = 26, GLIDE = 52;
   let perch = "pin", r = 0, lastT = 0, facing = 1, stillSince = 0, sit = 0, movedAt = 0;
   const tinyUpper = document.getElementById("tiny-upper"), tinyLegs = document.getElementById("tiny-legs");
-  let secondWasComfy = false, rejoinSecond = true;
+  let arrivedAt = 0, boredAfter = 0;
   const at = (deg, rr) => [Math.sin((deg * Math.PI) / 180) * rr, -Math.cos((deg * Math.PI) / 180) * rr];
   const comfy = (deg) => { const d = ((deg % 360) + 360) % 360; return Math.abs(d - 90) <= 50 || Math.abs(d - 270) <= 50; };
   function placeTiny(mins) {
@@ -1055,14 +1056,17 @@ ${ourTests(data)}
       return (Math.min(...EDGES.map((e) => (e > d + 1e-9 ? e : e + 360))) - d) / speed[p];
     };
 
-    // When the second hand swings away, decide whether to rejoin it next round.
+    // On a steady hand he stays until he's had enough of sitting still. He sets
+    // off for the second hand only if its good stretch lasts until he gets there.
     const secondComfy = Boolean(D.rate) && comfy(deg.s);
-    if (secondWasComfy && !secondComfy) rejoinSecond = Math.random() < 0.5;
-    secondWasComfy = secondComfy;
+    const sat = (now - arrivedAt) / 1000;
+    const curious = (t) => perch !== "s" && sat + t >= boredAfter;
+    const canReach = secondComfy && untilEdge("s") > r / WALK + 0.6;
 
     let want = perch;
     if (D.asleep || still) want = "pin";
-    else if (secondComfy && (perch === "s" || perch === "pin" || rejoinSecond)) want = "s";
+    else if (perch === "s" && secondComfy) want = "s";
+    else if (canReach && curious(0)) want = "s";
     else if (perch === "pin" || perch === "s" || !comfy(deg[perch])) {
       const options = ["m", "h"].filter((p) => comfy(deg[p]));
       want = options.includes(perch) ? perch : options.length ? options[Math.floor(Math.random() * options.length)] : "pin";
@@ -1072,7 +1076,7 @@ ${ourTests(data)}
     // coming round (if he means to rejoin it).
     let soon = Infinity;
     if (perch === "s") soon = untilEdge("s");
-    else if (perch !== "pin") soon = Math.min(D.rate && rejoinSecond && !secondComfy ? untilEdge("s") : Infinity, comfy(deg[perch]) ? untilEdge(perch) : 0);
+    else if (perch !== "pin") soon = Math.min(D.rate && !secondComfy && curious(untilEdge("s")) ? untilEdge("s") : Infinity, comfy(deg[perch]) ? untilEdge(perch) : 0);
 
     // Where he wants to stand on his hand: at the tip, or near enough to the pin
     // to reach it in time. He walks there at his own pace, never faster.
@@ -1085,7 +1089,10 @@ ${ourTests(data)}
     const needMove = Math.abs(target - r) > 0.01 || want !== perch;
     const before = r, step = needMove && sit > 0.05 ? 0 : (downhill ? GLIDE : WALK) * dt;
     r += Math.max(-step, Math.min(step, target - r));
-    if (want !== perch && r <= 0.01) { perch = want; r = 0; }
+    if (want !== perch && r <= 0.01) {
+      perch = want; r = 0;
+      if (perch !== "s") { arrivedAt = now; boredAfter = 6 + Math.random() * 8; }
+    }
     // He counts as walking until he's really stopped, so the waddle doesn't
     // flicker on and off between steps.
     if (Math.abs(r - before) > 1e-3) movedAt = now;
