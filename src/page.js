@@ -842,49 +842,46 @@ ${beacon}
     }
   }
 
-  // The big white cat: kneeling, arms out, palms up, as if to say "well?"
+  // The big cat (white in his town, a dark shape in ours): kneeling, arms out, palms up, as if to say "well?"
   function cat(x, ground) {
     const k = 1.15;
     ctx.save(); ctx.translate(x, ground); ctx.scale(k, k);
-    ctx.fillStyle = "#d8d2e4";
+    ctx.fillStyle = "#0d0a08";
     ctx.beginPath(); ctx.ellipse(0, -11, 9, 11, 0, 0, 6.283); ctx.fill();            // body, kneeling
     ctx.beginPath(); ctx.ellipse(-5, -1.5, 5, 2.5, 0, 0, 6.283); ctx.ellipse(5, -1.5, 5, 2.5, 0, 0, 6.283); ctx.fill(); // knees
-    ctx.strokeStyle = "#d8d2e4"; ctx.lineCap = "round"; ctx.lineWidth = 3.4;
+    ctx.strokeStyle = "#0d0a08"; ctx.lineCap = "round"; ctx.lineWidth = 3.4;
     ctx.beginPath(); ctx.moveTo(-6, -16); ctx.quadraticCurveTo(-13, -15, -19, -17); ctx.moveTo(6, -16); ctx.quadraticCurveTo(13, -15, 19, -17); ctx.stroke(); // arms
     ctx.beginPath(); ctx.ellipse(-20.5, -18.2, 3.2, 1.5, -0.3, 0, 6.283); ctx.ellipse(20.5, -18.2, 3.2, 1.5, 0.3, 0, 6.283); ctx.fill(); // open palms
     ctx.beginPath(); ctx.ellipse(0, -29, 10, 8.5, 0, 0, 6.283); ctx.fill();          // head
     ctx.beginPath(); ctx.moveTo(-9, -32); ctx.lineTo(-8, -41); ctx.lineTo(-2.5, -36); ctx.closePath();
     ctx.moveTo(9, -32); ctx.lineTo(8, -41); ctx.lineTo(2.5, -36); ctx.closePath(); ctx.fill(); // ears
-    ctx.fillStyle = "#2a2440";
-    ctx.beginPath(); ctx.arc(-3.8, -29.5, 2.4, 0, 6.283); ctx.arc(3.8, -29.5, 2.4, 0, 6.283); ctx.fill(); // big eyes
-    ctx.fillStyle = "#8f87a8"; ctx.beginPath(); ctx.arc(0, -26, 0.9, 0, 6.283); ctx.fill(); // nose
     ctx.restore();
   }
 
-  // The glowing stone. In his town it shows a number, likely how many have
-  // visited; we show it too once we know where to read it honestly.
+  // The glowing stone. In his town it shows a number that only his live world
+  // feed carries; we show it too if the public API ever offers it.
   function stone(x, ground) {
     const t = still ? 0 : performance.now();
     const pulse = 0.75 + 0.25 * Math.sin(t / 1400);
     const glow = ctx.createRadialGradient(x, ground - 14, 0, x, ground - 14, 30);
-    glow.addColorStop(0, "rgba(120,240,190," + 0.32 * pulse + ")"); glow.addColorStop(1, "rgba(120,240,190,0)");
+    glow.addColorStop(0, "rgba(236,230,244," + 0.14 * pulse + ")"); glow.addColorStop(1, "rgba(236,230,244,0)");
     ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(x, ground - 14, 30, 0, 6.283); ctx.fill();
-    ctx.fillStyle = "#1f5546";
+    ctx.fillStyle = "#0d0a08";
     ctx.beginPath(); ctx.moveTo(x - 9, ground);
     ctx.bezierCurveTo(x - 10, ground - 18, x - 6, ground - 31, x + 1, ground - 31);
     ctx.bezierCurveTo(x + 7, ground - 30, x + 10, ground - 17, x + 9, ground); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = "rgba(150,250,205," + 0.55 * pulse + ")"; ctx.lineWidth = 1; ctx.stroke();
+    ctx.strokeStyle = "rgba(236,230,244," + 0.3 * pulse + ")"; ctx.lineWidth = 1; ctx.stroke();
     if (D.visitors != null) {
-      ctx.fillStyle = "rgba(215,255,235,0.9)"; ctx.textAlign = "center";
+      ctx.fillStyle = "rgba(236,230,244,0.85)"; ctx.textAlign = "center";
       ctx.font = "600 5px 'Hanken Grotesk', sans-serif";
       ctx.fillText(Number(D.visitors).toLocaleString("en-GB"), x, ground - 17);
     }
   }
 
-  // A tree: a dark trunk and a round, uneven crown. His are pink; ours stay dark.
+  // A tree: a dark trunk and a round, uneven crown. His are pink; ours are dark like the rest.
   function tree(x, ground) {
     const h = 34 + ((x * 7) % 13);
-    ctx.fillStyle = "#101511";
+    ctx.fillStyle = "#0d0a08";
     ctx.fillRect(x - 1.2, ground - h * 0.55, 2.4, h * 0.55);
     ctx.beginPath();
     for (const [dx, dy, r] of [[0, -0.72, 0.3], [-0.24, -0.6, 0.22], [0.24, -0.62, 0.23], [-0.1, -0.88, 0.2], [0.14, -0.84, 0.19]])
