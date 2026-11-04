@@ -207,3 +207,9 @@ test("the note under the clocks puts the measured speed in human terms", async (
   assert.equal(clockNote(v(2)), "Time runs 2.0 times faster in Pino’s world. One Pino hour passes in 30 of our minutes, a whole Pino day in 12 hours.");
   assert.match(clockNote(null), /stands still at the last reading/);
 });
+
+test("Web Analytics only appears once a token is set", () => {
+  assert.ok(!renderPage(pageData()).includes("cloudflareinsights"));
+  const html = renderPage(pageData(), { analyticsToken: "abc123" });
+  assert.ok(html.includes(`<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token":"abc123"}'></script>`));
+});

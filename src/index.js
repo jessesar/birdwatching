@@ -357,6 +357,6 @@ export default {
     if (pathname === "/data.json") {
       return Response.json(data, { headers: { ...headers, "access-control-allow-origin": "*" } });
     }
-    return new Response(renderPage(data), { headers: { ...headers, "content-type": "text/html; charset=utf-8" } });
+    return new Response(renderPage(data, { analyticsToken: env.WEB_ANALYTICS_TOKEN }), { headers: { ...headers, "content-type": "text/html; charset=utf-8" } });
   },
 };

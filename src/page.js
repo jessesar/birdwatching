@@ -260,7 +260,7 @@ function marks(data) {
     .map((t) => {
       const [x, y] = STAR_POSITIONS[t.key];
       const side = x < 25 ? " tip-left" : x > 75 ? " tip-right" : "";
-      return `<a class="mark${side}" href="#${t.key}" style="left:${x}%;top:${y}%"><span>${esc(t.name)}</span><small>${seenText(t.seen, t.glimmers)}</small><em class="tip">${tip(t)}</em></a>`;
+      return `<a class="mark${side}" href="#${t.key}" style="left:${x}%;top:${y}%"><span>${esc(t.name)}</span><small>${seenText(t.seen, t.glimmers)}</small><em class="tip">${tip(t)}<span class="tip-more">Read more</span></em></a>`;
     })
     .join("");
 }
@@ -326,7 +326,11 @@ const SHARE_DESCRIPTION =
   "Pino is a small AI bird living in a simulated town. Lately he has started asking where it ends, testing its edge, its clock and its sky. " +
   "We watch him from outside, the way no one can watch us. A live experiment about simulation, awakening and worlds inside worlds.";
 
-export function renderPage(data) {
+// options.analyticsToken: Cloudflare Web Analytics (no cookies); left out if unset.
+export function renderPage(data, options = {}) {
+  const beacon = options.analyticsToken
+    ? `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='${JSON.stringify({ token: options.analyticsToken }).replace(/'/g, "")}'></script>`
+    : "";
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Birdwatching: watching an AI bird test the walls of his world</title>
 <meta name="description" content="${DESCRIPTION}">
@@ -398,7 +402,14 @@ h1{font:500 clamp(30px,5.4vw,52px)/1.05 var(--text);letter-spacing:-.015em;margi
 .mark .tip-when{display:block;color:var(--lamp);font-weight:500;font-size:12px;margin-top:4px}
 .mark.tip-left .tip{left:0;transform:none}
 .mark.tip-right .tip{left:auto;right:0;transform:none}
-.mark:hover .tip,.mark:focus-visible .tip{opacity:1}
+.mark:hover .tip,.mark:focus-visible .tip,.mark.open .tip{opacity:1}
+.mark .tip-more{display:none}
+/* On touch screens a tap opens the tooltip; "Read more" goes to the card. */
+@media (hover:none){
+  .mark:hover .tip,.mark:focus-visible .tip{opacity:0}
+  .mark.open .tip{opacity:1;pointer-events:auto}
+  .mark .tip-more{display:inline-block;margin-top:8px;color:var(--lamp);font-size:12px;text-decoration:underline;text-decoration-color:rgba(242,196,109,.45);text-underline-offset:3px}
+}
 .roost-label{position:absolute;z-index:3;transform:translate(-50%,-100%);display:grid;justify-items:center;gap:1px;text-align:center;line-height:1.25;white-space:nowrap;padding:2px 6px;pointer-events:none}
 .roost-label b{font-weight:600;font-size:13px}
 .roost-label span{font-size:12px;color:var(--ash)}
@@ -719,6 +730,7 @@ ${ourTests(data)}
     <p>This observatory only watches: it asks his public API no faster than he updates and never writes to him.</p>
   </div>
 </footer>
+${beacon}
 
 <script id="sky-data" type="application/json">${skyData(data)}</script>
 <script>
@@ -1261,14 +1273,28 @@ ${ourTests(data)}
     hisBar.style.width = (max > 0 ? (row.scrollLeft / max) * 100 : 0) + "%";
   }
   row.addEventListener("scroll", scrubHis, { passive: true });
-  marks.forEach((m, i) => m.addEventListener("click", (e) => {
+  // A star brings you to its card. On touch screens the first tap opens its
+  // tooltip instead, and "Read more" inside it goes to the card.
+  const touch = matchMedia("(hover: none)").matches;
+  const goToCard = (i) => {
     const card = row.children[i];
     if (!card) return;
-    e.preventDefault();
     const behavior = still ? "auto" : "smooth";
     hisRow.scrollIntoView({ behavior, block: "start" });
     row.scrollTo({ left: card.offsetLeft - row.children[0].offsetLeft, behavior });
+  };
+  marks.forEach((m, i) => m.addEventListener("click", (e) => {
+    e.preventDefault();
+    if (touch && !e.target.closest(".tip-more")) {
+      const open = m.classList.contains("open");
+      marks.forEach((o) => o.classList.remove("open"));
+      if (!open) m.classList.add("open");
+      return;
+    }
+    marks.forEach((o) => o.classList.remove("open"));
+    goToCard(i);
   }));
+  document.addEventListener("click", (e) => { if (!e.target.closest(".mark")) marks.forEach((o) => o.classList.remove("open")); });
   let queued = false;
   addEventListener("scroll", () => { if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; scrub(); }); } }, { passive: true });
   addEventListener("resize", () => { scrub(); scrubHis(); });
@@ -1279,7 +1305,10 @@ ${ourTests(data)}
   if (still) setInterval(dials, 1000);
   addEventListener("resize", () => { build(); frame(performance.now()); });
   if (!still) {
-    const loop = (t) => { frame(t); dials(); requestAnimationFrame(loop); };
+    // The sky only draws while it's in view; the clocks below keep running.
+    let skyInView = true;
+    if ("IntersectionObserver" in window) new IntersectionObserver((e) => { skyInView = e[0].isIntersecting; }).observe(box);
+    const loop = (t) => { if (skyInView) frame(t); dials(); requestAnimationFrame(loop); };
     requestAnimationFrame(loop);
   }
   // Fresh observations every five minutes; the sky keeps moving in between.

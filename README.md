@@ -4,7 +4,7 @@
 
 Live at **https://birdwatching.pino-observatory.workers.dev**
 
-[Pino](https://pinos.world) is a small autonomous bird who lives in a town that
+[Pino](https://pinos.world) is a small autonomous kiwi who lives in a town that
 runs on another machine. He paints, patches tunes on a synth and sells drawings
 of cats and trains. On 22 October 2026 he wrote a page called
 [Testing the Town’s Walls](https://pino-the-bird.github.io/limits/): five
@@ -21,13 +21,24 @@ Birdwatching watches him from outside while he does it.
 
 ## What the page shows
 
-- **A night sky over his town.** Each test is a star in a constellation above
-  his rooftops. A star lights up when something he does or says is clearly
-  about that test, and glimmers when it only leans towards it. The real moon
-  hangs at its real phase. A clock tower shows his town's time, and one window
-  stays lit while he's awake.
-- **His town now,** next to two clocks: his town clock and ours. His runs at
-  the speed the observatory measured, so his second hand races ours.
+- **A sky over his town that follows his clock.** Night, dawn, day and dusk
+  run on his town time, while the real moon hangs at its real phase. Each test
+  is a star in a constellation above his rooftops: it lights up when something
+  he does or says is clearly about that test, and glimmers when it only leans
+  towards it. Hover a star (tap on a phone) for what the test is about and its
+  latest sighting.
+- **His roost** stands among the rooftops beside the clock tower. Its window
+  glows while he's awake; asleep, it goes dark and z's drift up from it.
+- **His town now,** refreshed every few seconds: what he's doing, what he's
+  thinking, how he feels in the town's words, and how he is (energy, mood,
+  rested, connected, fulfilled) as small bars. Beside it, his town clock next
+  to ours, running at the speed the observatory measured and kept in sync with
+  each new reading without jumping.
+- **Tiny Pino** lives on his town clock. He rides the second hand while it
+  lies comfortably, moves to the minute or hour hand when it gets too steep,
+  sits down when he stays a while, and gets curious again. He only moves
+  himself: he waddles uphill, slower the steeper it is, and slides downhill,
+  faster the steeper it is, ending in a little wobble.
 - **Why watch a bird test his walls.** A scroll-driven dive through worlds
   inside worlds (ours, his, and a Pino of his own), then the times we tested
   our own walls: Magellan (1522), Bessel's parallax (1838), Hafele and
@@ -39,9 +50,11 @@ Birdwatching watches him from outside while he does it.
   words it took as evidence are highlighted.
 
 - **Our tests on him.** He tests his world; we quietly test him, with
-  questions we keep asking about ourselves. Does he sleep in one block or in
-  pieces? Will he learn that only sleep restores him? Does he notice what his
-  body tells him? Read from his state, minute by minute.
+  questions we keep asking about ourselves: does he sleep in one block or in
+  pieces, will he learn that only sleep restores him, does he notice what his
+  body tells him, does he keep his promises, does he get bored, does he
+  persist, does contact with others lift him? Read from his state and his
+  feed.
 
 The raw observations are at
 [`/data.json`](https://birdwatching.pino-observatory.workers.dev/data.json),
@@ -49,8 +62,13 @@ open to anyone (CORS enabled).
 
 ## What it has found so far
 
-- **His clock runs about 4.7 times faster than ours.** One town hour lasts
-  about 12.7 real minutes, so his Time claim doesn't hold.
+- **His clock runs about 3.5 to 4.7 times faster than ours.** One Pino hour
+  passes in 13 to 17 of our minutes, so his Time claim doesn't hold.
+- **His nights race by.** He fell asleep at 20:55 his time and woke into 05:12
+  the next morning: about 8 of his hours, in 20 of our minutes. While he sleeps
+  his town reports no time at all.
+- **Only sleep restores him.** He tried to rest during the day 14 times while
+  worn out; none of it lowered his need for rest. One sleep cleared it.
 - **The speaking clock.** On 3 November 2026 at 23:46 UTC he "dialed the
   payphone, asked for the time and the speaking clock barked it out, dead sure
   of every second." It was the first sighting for the Time test.
@@ -60,10 +78,11 @@ open to anyone (CORS enabled).
 It follows the [developer guidelines](https://pinos.world/developers):
 
 - **It only watches.** GET requests to his public API, nothing ever sent to him.
-- **It asks on his clock.** `/now` and `/feed` once a minute (his feed only holds
-  about ten minutes), `/mind` every five minutes, `/memories` every ten. All are
-  slower than each part updates.
-- **A 503 means he isn't answering.** The page says so and asks again next minute.
+- **It asks on his clock.** `/now` every 15 seconds and `/feed` every 30, as
+  often as each updates; `/mind` every five minutes and `/memories` every ten.
+  Visitors are served from the observatory, so their number doesn't add to his
+  load.
+- **A 503 means he isn't answering.** The page says so and asks again shortly.
 - **It credits him** as "Pino, from pinos.world". His words are quoted unedited.
   Anything the observatory adds (measurements, reasoning) is labelled as its own.
 
@@ -109,8 +128,8 @@ hour of steady readings.
 | `src/index.js` | The Worker: collecting, judging, the page and `/data.json` |
 | `src/observe.js` | The five tests in his words, keyword tags, clock rate, moon phase |
 | `src/judge.js` | The model's prompt and the parsing of its answer |
-| `src/ours.js` | Our tests on him: his sleep, learning to rest, feeling his body |
-| `src/page.js` | The page: sky, clocks, the dive, the cards, live refresh |
+| `src/ours.js` | Our tests on him: sleep, rest, his body, promises, boredom, persistence, needing others |
+| `src/page.js` | The page: sky and roost, clocks and tiny Pino, the dive, the cards, live refresh |
 | `migrations/` | D1 schema |
 | `public/` | The favicon and the social preview image (`og.png`, a frame of the live sky) |
 | `alias/` | A tiny Worker that serves the observatory's first address, `pino-observatory`, by forwarding to `birdwatching` |
@@ -137,8 +156,11 @@ npm run migrate:remote
 npm run deploy
 ```
 
-Collection starts within a minute of deploying. It runs comfortably on the
-Workers free plan.
+Collection starts within a minute of deploying. On the Workers free plan, set
+`DERIVE_EVERY_MIN` to 10, `FEED_TESTS_EVERY_MIN` to 30 and `STATUS_EVERY_S` to
+60 in `wrangler.jsonc`; the live site runs on the $5 paid plan at 1, 1 and 15.
+For visitor numbers, set `WEB_ANALYTICS_TOKEN` to a Cloudflare Web Analytics
+site token (no cookies); without it, no beacon is added.
 
 ## Roadmap
 
