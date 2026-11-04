@@ -1024,7 +1024,7 @@ ${ourTests(data)}
   // nine o'clock); steeper, up or down, is too exciting. He prefers the second
   // hand, which races round; when it gets steep he moves to the minute or hour
   // hand (at random if both are comfortable). There he settles in for a good
-  // while (6 to 14 seconds), until watching the second hand go round makes him
+  // while (4 to 9 seconds), until watching the second hand go round makes him
   // curious enough to move on: at random to the second hand or to the other
   // steady hand, whichever is comfortable. He only joins the second hand while
   // it's climbing (the left side, 220 to 320 degrees) and when he can reach it
@@ -1107,7 +1107,7 @@ ${ourTests(data)}
     if (want !== perch && r <= 0.01) {
       perch = want; r = 0;
       next = null;
-      if (perch !== "s") { arrivedAt = now; boredAfter = 6 + Math.random() * 8; }
+      if (perch !== "s") { arrivedAt = now; boredAfter = 4 + Math.random() * 5; }
     }
     // He counts as walking until he's really stopped, so the waddle doesn't
     // flicker on and off between steps.
