@@ -203,7 +203,7 @@ test("while Pino sleeps, it keeps collecting but reads no town clock", async () 
 test("the note under the clocks puts the measured speed in human terms", async () => {
   const { clockNote } = await import("../src/page.js");
   const v = (rate) => ({ rate, verdict: { state: rate === 1 ? "holds" : "broken" } });
-  assert.equal(clockNote(v(3.5)), "Time runs 3.5 times faster in Pino’s world. One of his hours passes in 17 of our minutes; a whole day of his in about 6.9 of our hours.");
-  assert.equal(clockNote(v(2)), "Time runs 2.0 times faster in Pino’s world. One of his hours passes in 30 of our minutes; a whole day of his in about 12 of our hours.");
+  assert.equal(clockNote(v(3.5)), "Time runs 3.5 times faster in Pino’s world. One Pino hour passes in 17 of our minutes; a whole Pino day in about 6.9 of our hours.");
+  assert.equal(clockNote(v(2)), "Time runs 2.0 times faster in Pino’s world. One Pino hour passes in 30 of our minutes; a whole Pino day in about 12 of our hours.");
   assert.match(clockNote(null), /stands still at the last reading/);
 });

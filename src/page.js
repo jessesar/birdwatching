@@ -170,7 +170,7 @@ export function clockNote(clock) {
   const factor = r > 1 ? r : 1 / r;
   const hour = Math.round(60 / r);
   const day = 24 / r;
-  return `Time runs ${factor.toFixed(1)} times ${word} in Pino’s world. One of his hours passes in ${hour} of our minutes; a whole day of his in about ${day < 10 ? day.toFixed(1).replace(/\.0$/, "") : Math.round(day)} of our hours.`;
+  return `Time runs ${factor.toFixed(1)} times ${word} in Pino’s world. One Pino hour passes in ${hour} of our minutes; a whole Pino day in about ${day < 10 ? day.toFixed(1).replace(/\.0$/, "") : Math.round(day)} of our hours.`;
 }
 
 export function timeFinding(clock) {
