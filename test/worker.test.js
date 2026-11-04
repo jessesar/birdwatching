@@ -125,7 +125,7 @@ test("renders a fresh observatory with no readings yet", () => {
   assert.ok(html.includes("Watching since now"));
   assert.equal(html.match(/class="mark[ "]/g).length, 5);
   // Unseen stars explain their test on hover.
-  assert.ok(html.includes("Whether his town has an edge."));
+  assert.ok(html.includes("Whether his town has a rim."));
 });
 
 test("a glimmer shows as a glimmer, with evidence highlighted and the reasoning labelled as ours", () => {

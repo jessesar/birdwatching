@@ -247,7 +247,7 @@ function testItem(test, data) {
 
 // What each test is about, in a line, for a star with nothing seen yet.
 const ABOUT = {
-  edges: "Whether his town has an edge. He means to walk east until he can’t go on.",
+  edges: "Whether his town has a rim. He means to walk east until he can’t go on.",
   time: "Whether his hours run like ours. He means to count the street clock through a night.",
   shops: "Whether shops only work in their hours. He means to ring the takeaway bell when it’s shut.",
   money: "Whether money only comes from his prints. He means to buy a pastry and sweep for a penny.",
@@ -408,7 +408,7 @@ h1{font:500 clamp(30px,5.4vw,52px)/1.05 var(--text);letter-spacing:-.015em;margi
 .masthead p.sub{color:var(--ash);margin:12px 0 0;max-width:62ch;font-size:15px;line-height:1.5}
 .masthead p.sub span{display:block}
 /* A quiet way out to his town, in the corner of the sky. */
-.visit{position:absolute;z-index:4;top:max(18px,env(safe-area-inset-top,0px));right:max(18px,env(safe-area-inset-right,0px));padding:6px 13px;border:1px solid rgba(242,196,109,.45);border-radius:999px;color:var(--lamp);font-size:13px;font-weight:500;text-decoration:none;background:rgba(13,10,8,.2);transition:background .2s ease,color .2s ease,border-color .2s ease}
+.visit{position:absolute;z-index:4;top:max(18px,env(safe-area-inset-top,0px));right:max(18px,env(safe-area-inset-right,0px));padding:5px 12px;border:1px solid rgba(242,196,109,.28);border-radius:999px;color:rgba(242,196,109,.72);font-size:12px;font-weight:500;text-decoration:none;background:none;transition:background .2s ease,color .2s ease,border-color .2s ease}
 .visit:hover{background:var(--lamp);color:#1a140f;text-shadow:none}
 .visit:focus-visible{outline:2px solid var(--lamp);outline-offset:3px}
 .masthead p.sub a{text-decoration-color:var(--ash);text-underline-offset:3px}
@@ -715,7 +715,7 @@ footer a{text-underline-offset:3px}
 
     <h3>We tested our walls too</h3>
     <ol class="ours-tests" id="timeline">
-      <li><b>1522</b><span class="pairs">his edges test</span><p>Magellan’s crew sailed west and came home from the east. No rim, only a curve.</p></li>
+      <li><b>1522</b><span class="pairs">his rim test</span><p>Magellan’s crew sailed west and came home from the east. No rim, only a curve.</p></li>
       <li><b>1838</b><span class="pairs">his sky test</span><p>Friedrich Bessel saw the star 61 Cygni shift against more distant stars. The sky has depth; it isn’t painted on.</p></li>
       <li><b>1971</b><span class="pairs">his time test</span><p>Joseph Hafele and Richard Keating flew atomic clocks around the world. They came back disagreeing with the clocks left on the ground, by the amount relativity predicts.</p></li>
       <li><b>2012</b><span class="pairs">a test for the machine</span><p>Silas Beane, Zohreh Davoudi and Martin Savage worked out what a universe computed on a grid would give away: a faint preferred direction in the highest-energy cosmic rays. Nobody has found it.</p></li>
@@ -823,7 +823,8 @@ ${beacon}
       for (let wy = ground - h + 10; wy < ground - 8; wy += 12)
         for (let wx = x + 7; wx < x + w - 9; wx += 11) if (g() < 0.16) lit.push([wx, wy, true]);
       town.push({ x, w, h, lit, gable: g() < 0.4 });
-      x += w + 2;
+      // His town isn't built up yet: open ground between the buildings.
+      x += w + 10 + g() * 46;
     }
   }
 
@@ -847,7 +848,7 @@ ${beacon}
     ctx.restore();
   }
 
-  // On load the constellation traces itself from Edges to Sky, lighting each
+  // On load the constellation traces itself from Rim to Sky, lighting each
   // test's star as the line reaches it.
   const intro = !still;
   const TRACE_MS = intro ? 1400 : 0, TRACE_DELAY = intro ? 450 : 0;
@@ -944,8 +945,10 @@ ${beacon}
     const ground = H * 0.97, cx = W / 2, roostX = cx + 19 + 46;
     ctx.fillStyle = "#0d0a08";
     for (const b of town) {
-      // His roost stands on the ground in a gap of its own.
+      // His roost stands on the ground in a gap of its own, and the clock tower
+      // stands free so you can see through its arch.
       if (b.x < roostX + 26 && b.x + b.w > roostX - 26) continue;
+      if (b.x < cx + 30 && b.x + b.w > cx - 30) continue;
       ctx.beginPath();
       ctx.moveTo(b.x, ground); ctx.lineTo(b.x, ground - b.h);
       if (b.gable) ctx.lineTo(b.x + b.w / 2, ground - b.h - 12);
@@ -955,11 +958,44 @@ ${beacon}
       ctx.fillStyle = "#0d0a08";
     }
     ctx.fillRect(0, ground, W, H - ground);
-    // The clock tower, showing his town's time.
+    // The clock tower, as it stands in his town: an open arch at its foot with a
+    // ladder inside, two tall arched windows, ledges between, a pointed roof with
+    // a spire, and the clock showing his town's time.
     const tw = 38, th = 150, top = ground - th;
-    ctx.fillRect(cx - tw / 2, top, tw, th);
-    ctx.beginPath(); ctx.moveTo(cx - tw / 2 - 4, top); ctx.lineTo(cx, top - 34); ctx.lineTo(cx + tw / 2 + 4, top); ctx.fill();
-    const dy = top + 26, r = 13;
+    const archW = 22, archTop = ground - 50;
+    ctx.beginPath();
+    ctx.rect(cx - tw / 2, top, tw, th);
+    ctx.moveTo(cx - archW / 2, ground);
+    ctx.lineTo(cx - archW / 2, archTop + archW / 2);
+    ctx.arc(cx, archTop + archW / 2, archW / 2, Math.PI, 0);
+    ctx.lineTo(cx + archW / 2, ground);
+    ctx.closePath();
+    ctx.fill("evenodd");
+    // The ladder standing in the arch.
+    ctx.strokeStyle = "#0d0a08"; ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(cx - 2.5, ground); ctx.lineTo(cx - 2.5, archTop + 8);
+    ctx.moveTo(cx + 2.5, ground); ctx.lineTo(cx + 2.5, archTop + 8);
+    for (let ry = ground - 5; ry > archTop + 9; ry -= 6) { ctx.moveTo(cx - 2.5, ry); ctx.lineTo(cx + 2.5, ry); }
+    ctx.stroke();
+    // Ledges between the sections.
+    for (const ly of [top, top + 42, archTop - 10]) ctx.fillRect(cx - tw / 2 - 3, ly, tw + 6, 4);
+    // Two tall arched windows, faint against the dark.
+    ctx.fillStyle = "rgba(160,150,190,0.16)";
+    for (const wx of [cx - 7, cx + 7]) {
+      ctx.beginPath();
+      ctx.moveTo(wx - 3.5, archTop - 16); ctx.lineTo(wx - 3.5, top + 56);
+      ctx.arc(wx, top + 56, 3.5, Math.PI, 0); ctx.lineTo(wx + 3.5, archTop - 16); ctx.closePath(); ctx.fill();
+    }
+    // A pointed roof with slightly curved sides, and a spire.
+    ctx.fillStyle = "#0d0a08";
+    ctx.beginPath();
+    ctx.moveTo(cx - tw / 2 - 5, top + 1);
+    ctx.quadraticCurveTo(cx - 5, top - 12, cx, top - 34);
+    ctx.quadraticCurveTo(cx + 5, top - 12, cx + tw / 2 + 5, top + 1);
+    ctx.fill();
+    ctx.fillRect(cx - 0.75, top - 42, 1.5, 9);
+    const dy = top + 22, r = 12;
     ctx.fillStyle = "#f3e7c9"; ctx.beginPath(); ctx.arc(cx, dy, r, 0, 6.283); ctx.fill();
     const m = townMinutesNow();
     if (m != null) {

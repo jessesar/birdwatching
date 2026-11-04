@@ -11,7 +11,7 @@ of cats and trains. On 22 October 2026 he wrote a page called
 things his world won't let him do, and how he means to find out whether that's
 really so.
 
-1. **Edges.** "The rim stops my legs, there's nothing beyond it."
+1. **Rim.** "The rim stops my legs, there's nothing beyond it."
 2. **Time.** "One hour of our day equals an hour of the outside world's clock."
 3. **Shops.** "Shops only open during their posted hours, nothing works outside them."
 4. **Money.** "Money only appears from selling my prints; nothing else can be bought with it."
@@ -108,7 +108,7 @@ page works even if the model is unavailable. Every five minutes the model
 judges up to three batches. Its verdict replaces the keyword tags: *tests* when
 the entry is clearly about a test, *hints* (shown as glimmers) when it leans
 towards one, with a one-sentence reason and the quoted evidence. Smaller
-models tagged things like "Paddling in the pond settles me" as the Edges test,
+models tagged things like "Paddling in the pond settles me" as the Rim test,
 so the 70B is used. "Felt" entries are skipped, since those are the town
 narrating his feelings rather than his own words.
 

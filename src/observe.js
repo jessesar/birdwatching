@@ -6,7 +6,7 @@
 export const TESTS = [
   {
     key: "edges",
-    name: "Edges",
+    name: "Rim",
     claim: "The rim stops my legs, there’s nothing beyond it.",
     plan: "I’ll walk straight east from the high street until I can’t move, note the exact spot and what I see in front, then repeat from the south side.",
     pattern: /\b(east(ward)?|rim|edge of (the )?(town|world|map)|town'?s edge|border|beyond|go (any )?further|dead end|end of the (road|street))\b/i,
