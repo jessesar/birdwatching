@@ -110,12 +110,23 @@ function marks(data) {
     .join("");
 }
 
+// How he feels (the town's own words) and what he needs right now, as thin bars.
+const NEEDS = [["rest", "rest"], ["curiosity", "curiosity"], ["social", "company"], ["expression", "to make something"], ["quiet", "quiet"]];
+function feel(n) {
+  const words = n?.feeling?.words;
+  const needs = NEEDS.filter(([k]) => typeof n?.needs?.[k] === "number");
+  if (!words && !needs.length) return "";
+  return `${words ? `<p class="feeling"><span>feeling</span> <q>${esc(words)}</q></p>` : ""}` +
+    (needs.length ? `<p class="needs-title">what he needs</p><ul class="needs">${needs.map(([k, label]) =>
+      `<li><span>${label}</span><i><b style="width:${Math.round(Math.max(0, Math.min(1, n.needs[k])) * 100)}%"></b></i></li>`).join("")}</ul>` : "");
+}
+
 function nowLine(data) {
   if (!data.now) return `<p class="now">No readings yet. The first arrives within a minute of the observatory starting.</p>`;
   const n = data.now;
   const quiet = data.status && !data.status.answering ? " He isn’t answering right now." : "";
   const when = n.world?.time ? `In his town now, day ${esc(n.world.day)}, ${esc(n.world.time)}${n.asleep ? ", asleep" : ""}` : "In his town now, asleep. His town shows no time while he sleeps";
-  return `<p class="now"><span class="when">${when}</span><span class="doing">${esc(n.doing)}${quiet}</span>${n.thought ? `<span class="thought"><span>thinking</span> <q>${esc(n.thought)}</q></span>` : ""}</p>`;
+  return `<div class="now-col"><p class="now"><span class="when">${when}</span><span class="doing">${esc(n.doing)}${quiet}</span>${n.thought ? `<span class="thought"><span>thinking</span> <q>${esc(n.thought)}</q></span>` : ""}</p><div class="feel" id="feel">${feel(n)}</div></div>`;
 }
 
 const dial = (id, label) => `<figure class="dial">
@@ -232,7 +243,16 @@ main{max-width:980px;margin:0 auto}
 .now .doing::first-letter{text-transform:uppercase}
 .now .thought{display:block;margin-top:12px;font-size:16px;line-height:1.55;font-style:italic;color:#cfc7bd}
 .now .thought>span{font-style:normal;font-size:12px;letter-spacing:.04em;color:var(--lamp);margin-right:4px}
-.ground .note{grid-column:1/-1;margin:0;color:var(--ash);font-size:14px}
+.ground .note{margin:18px 0 0;color:var(--ash);font-size:14px;max-width:372px}
+.ground-inner{align-items:start}
+.feel{margin-top:22px;display:grid;gap:10px;max-width:46ch}
+.feeling{margin:0;font-size:15px;line-height:1.5;color:#cfc7bd}
+.feeling>span{font-size:12px;letter-spacing:.04em;color:var(--lamp);margin-right:4px}
+.needs-title{margin:6px 0 0;font-size:12px;letter-spacing:.04em;color:var(--lamp)}
+ul.needs{list-style:none;margin:0;padding:0;display:grid;gap:7px;max-width:340px}
+ul.needs li{display:grid;grid-template-columns:132px 1fr;align-items:center;gap:12px;font-size:13px;color:var(--ash)}
+ul.needs i{display:block;height:4px;border-radius:2px;background:rgba(243,239,233,.1);overflow:hidden}
+ul.needs b{display:block;height:100%;border-radius:2px;background:linear-gradient(90deg,rgba(242,196,109,.55),var(--lamp));transition:width 1.2s ease}
 .when{display:block;color:var(--ash);font-size:14px;font-variant-numeric:tabular-nums}
 q{quotes:"“" "”"}
 
@@ -395,11 +415,13 @@ footer a{text-underline-offset:3px}
 <section class="ground gutter" aria-label="His town now, and his clock beside ours">
   <div class="ground-inner">
     ${nowLine(data)}
+    <div class="clock-col">
     <div class="clocks">
       <div id="town">${dial("tc", "His town clock")}</div>
       <div id="ours">${dial("oc", "Our clock, UTC")}</div>
     </div>
     <p class="note">${data.clock && data.clock.verdict.state !== "measuring" ? "His clock runs here at the speed we measured, counted on from the last reading." : "His clock stands still at the last reading until we’ve timed it for half an hour. After that it runs here on its own, at his speed."}</p>
+    </div>
   </div>
 </section>
 
@@ -780,7 +802,7 @@ ${data.tests.map((t) => testItem(t, data)).join("\n")}
     if (label.textContent !== text) label.textContent = text;
     if (below.textContent !== second) below.textContent = second;
   }
-  const ourDate = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const ourDate = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", day: "numeric", month: "long", year: "numeric" });
   function dials() {
     const now = new Date();
     setDial(ours, now.getUTCHours() * 60 + now.getUTCMinutes() + (now.getUTCSeconds() + now.getUTCMilliseconds() / 1000) / 60, ourDate.format(now), true);
@@ -872,6 +894,14 @@ ${data.tests.map((t) => testItem(t, data)).join("\n")}
   const notice = document.getElementById("new-sighting");
   const seenText = (n, g) => n ? (n === 1 ? "seen once" : "seen " + n + " times") : g ? (g === 1 ? "a glimmer" : g + " glimmers") : "not yet seen";
   const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const NEEDS = ${JSON.stringify(NEEDS)};
+  function feelHTML(n) {
+    const words = n.feeling && n.feeling.words;
+    const needs = NEEDS.filter(([k]) => n.needs && typeof n.needs[k] === "number");
+    return (words ? '<p class="feeling"><span>feeling</span> <q>' + esc(words) + "</q></p>" : "") +
+      (needs.length ? '<p class="needs-title">what he needs</p><ul class="needs">' + needs.map(([k, label]) =>
+        "<li><span>" + label + '</span><i><b style="width:' + Math.round(Math.max(0, Math.min(1, n.needs[k])) * 100) + '%"></b></i></li>').join("") + "</ul>" : "");
+  }
   async function refresh() {
     let d;
     try { d = await (await fetch("/data.json", { cache: "no-store" })).json(); } catch { return; }
@@ -882,6 +912,7 @@ ${data.tests.map((t) => testItem(t, data)).join("\n")}
       nowEl.innerHTML = '<span class="when">' + when + '</span><span class="doing">' + esc(n.doing) + quiet + "</span>" +
         (n.thought ? '<span class="thought"><span>thinking</span> <q>' + esc(n.thought) + "</q></span>" : "");
       D.asleep = Boolean(n.asleep);
+      document.getElementById("feel").innerHTML = feelHTML(n);
     }
     if (d.lastReading) D.last = d.lastReading;
     const measured = d.clock && d.clock.verdict.state !== "measuring";
