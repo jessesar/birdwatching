@@ -115,7 +115,7 @@ function nowLine(data) {
   const n = data.now;
   const quiet = data.status && !data.status.answering ? " He isn’t answering right now." : "";
   const when = n.world?.time ? `In his town now, day ${esc(n.world.day)}, ${esc(n.world.time)}${n.asleep ? ", asleep" : ""}` : "In his town now, asleep. His town shows no time while he sleeps";
-  return `<p class="now"><span class="when">${when}</span>${esc(n.doing)}. <q>${esc(n.thought)}</q>${quiet}</p>`;
+  return `<p class="now"><span class="when">${when}</span><span class="doing">${esc(n.doing)}${quiet}</span>${n.thought ? `<span class="thought"><span>thinking</span> <q>${esc(n.thought)}</q></span>` : ""}</p>`;
 }
 
 const dial = (id, label) => `<figure class="dial">
@@ -228,7 +228,12 @@ h1{font:500 clamp(30px,5.4vw,52px)/1.05 var(--text);letter-spacing:-.015em;margi
 main{max-width:980px;margin:0 auto}
 .ground{background:#0d0a08}
 .ground-inner{max-width:940px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px 56px;align-items:center;padding-block:12px 48px}
-.now{margin:0;font-size:19px;line-height:1.5;max-width:44ch}
+.now{margin:0;max-width:46ch}
+/* What he's doing is the headline; his thought is his inner voice, quieter and in italics. */
+.now .doing{display:block;font-size:22px;line-height:1.3;font-weight:500;color:var(--ivory);margin-top:4px}
+.now .doing::first-letter{text-transform:uppercase}
+.now .thought{display:block;margin-top:12px;font-size:16px;line-height:1.55;font-style:italic;color:#cfc7bd}
+.now .thought>span{font-style:normal;font-size:12px;letter-spacing:.04em;color:var(--lamp);margin-right:4px}
 .ground .note{grid-column:1/-1;margin:0;color:var(--ash);font-size:14px}
 .when{display:block;color:var(--ash);font-size:14px;font-variant-numeric:tabular-nums}
 q{quotes:"“" "”"}
@@ -872,7 +877,8 @@ ${data.tests.map((t) => testItem(t, data)).join("\n")}
       const n = d.now, quiet = d.status && !d.status.answering ? " He isn’t answering right now." : "";
       const when = n.world && n.world.time ? "In his town now, day " + esc(n.world.day) + ", " + esc(n.world.time) + (n.asleep ? ", asleep" : "")
         : "In his town now, asleep. His town shows no time while he sleeps";
-      nowEl.innerHTML = '<span class="when">' + when + "</span>" + esc(n.doing) + ". <q>" + esc(n.thought) + "</q>" + quiet;
+      nowEl.innerHTML = '<span class="when">' + when + '</span><span class="doing">' + esc(n.doing) + quiet + "</span>" +
+        (n.thought ? '<span class="thought"><span>thinking</span> <q>' + esc(n.thought) + "</q></span>" : "");
       D.asleep = Boolean(n.asleep);
       document.getElementById("roost-thought").textContent = n.thought ?? "";
     }
