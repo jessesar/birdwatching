@@ -867,16 +867,19 @@ ${beacon}
       ctx.lineWidth = 4.2;
       ctx.beginPath(); ctx.moveTo(side * 6, -26.5); ctx.quadraticCurveTo(side * 13, -24.5, side * 19, -27); ctx.stroke();
       blob(side * 22, -28.5, 4.6, 2.2, -side * 0.35);
-      // An upright pointed ear.
-      ctx.beginPath(); ctx.moveTo(side * 9.8, -42); ctx.lineTo(side * 9.6, -52.5); ctx.lineTo(side * 3.5, -48); ctx.closePath(); ctx.fill();
+      // A pointed ear, curving outwards towards its tip.
+      ctx.beginPath(); ctx.moveTo(side * 9.8, -42);
+      ctx.quadraticCurveTo(side * 9.8, -48.5, side * 11.6, -52.5);
+      ctx.quadraticCurveTo(side * 7, -51, side * 3.5, -48);
+      ctx.closePath(); ctx.fill();
     }
     // A big head, a little wider than tall, with full cheeks.
     blob(0, -40.5, 10.3, 9.8); blob(-4.2, -35.5, 6, 4.6); blob(4.2, -35.5, 6, 4.6);
-    // A very simple face, drawn faintly: big round eyes with slit pupils, a small
+    // A very simple face, drawn faintly: big eyes, a little lidded, with slit pupils, a small
     // nose and a small mouth.
     ctx.strokeStyle = ctx.fillStyle = "rgba(230,223,212,0.5)"; ctx.lineWidth = 0.55;
     ctx.beginPath();
-    for (const ex of [-3.7, 3.7]) { ctx.moveTo(ex + 2.6, -40); ctx.arc(ex, -40, 2.6, 0, 6.283); ctx.moveTo(ex, -41.6); ctx.lineTo(ex, -38.4); }
+    for (const ex of [-3.7, 3.7]) { ctx.moveTo(ex + 2.6, -39.5); ctx.ellipse(ex, -39.5, 2.6, 1.75, 0, 0, 6.283); ctx.moveTo(ex, -40.6); ctx.lineTo(ex, -38.4); }
     ctx.moveTo(-1.4, -34.6); ctx.quadraticCurveTo(-0.7, -33.6, 0, -34.4); ctx.quadraticCurveTo(0.7, -33.6, 1.4, -34.6);
     ctx.stroke();
     ctx.beginPath(); ctx.moveTo(-0.8, -36.4); ctx.lineTo(0.8, -36.4); ctx.lineTo(0, -35.4); ctx.closePath(); ctx.fill();
