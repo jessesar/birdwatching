@@ -3,6 +3,8 @@
 // moments: [{ realMs, asleep, townMin (null while asleep), rest, energy, mood, doing, thought }]
 
 const REST_ACTION = /\b(roost|sit down|sit-down|resting|rest|breather|nap|lie down|lying down)\b/i;
+// Walking or heading somewhere to rest isn't resting yet.
+const isRest = (doing) => REST_ACTION.test(doing ?? "") && !/^(walking|heading|going)\b/i.test(doing ?? "");
 const TIRED_WORDS = /\b(tired|spent|exhausted|exhaustion|dead on my feet|collapse|breather|rest|sleep|nap|knackered|wiped|drained|worn|weary|burn(ed|t)? out|cuppa)\b/i;
 
 const clockTime = (min) => {
@@ -59,9 +61,9 @@ export function learningToRest(moments) {
   let attempts = 0, helped = 0;
   for (let i = 0; i < moments.length; i++) {
     const m = moments[i];
-    if (m.asleep || !(m.rest >= 0.9) || !REST_ACTION.test(m.doing ?? "")) continue;
+    if (m.asleep || !(m.rest >= 0.9) || !isRest(m.doing)) continue;
     let j = i;
-    while (j + 1 < moments.length && !moments[j + 1].asleep && REST_ACTION.test(moments[j + 1].doing ?? "")) j++;
+    while (j + 1 < moments.length && !moments[j + 1].asleep && isRest(moments[j + 1].doing)) j++;
     attempts++;
     const after = moments[j + 1] && !moments[j + 1].asleep ? moments[j + 1] : moments[j];
     if (after.rest <= m.rest - 0.05) helped++;
@@ -94,23 +96,26 @@ export function ourTests(moments) {
 const sorted = (entries) => [...entries].sort((a, b) => a.at - b.at);
 
 // Does he keep his promises? "A want: X (said it would)" opens one,
-// "Done with a want: X (did it)" keeps it. His memories hold promises to people.
+// "Done with a want: X (did it)" keeps it, "(a new plan)" lets it go.
+// His memories hold promises to people.
 export function keepingPromises(entries, memories = []) {
   // The same want comes up in his mind many times; each distinct one counts once.
-  const opened = new Map(), saidWants = new Set(), keptWants = new Set();
+  const opened = new Map(), saidWants = new Set(), keptWants = new Set(), droppedWants = new Set();
   const keptAfter = [];
   for (const e of sorted(entries)) {
     if (e.kind !== "mind") continue;
     let m = e.text.match(/^A want: (.+) \(said it would\)$/);
     if (m) { saidWants.add(m[1]); if (!opened.has(m[1]) && !keptWants.has(m[1])) opened.set(m[1], e.at); continue; }
     m = e.text.match(/^Done with a want: (.+) \(did it\)$/);
-    if (m && opened.has(m[1])) { keptWants.add(m[1]); keptAfter.push((e.at - opened.get(m[1])) / 60000); opened.delete(m[1]); }
+    if (m && opened.has(m[1])) { keptWants.add(m[1]); keptAfter.push((e.at - opened.get(m[1])) / 60000); opened.delete(m[1]); continue; }
+    m = e.text.match(/^Done with a want: (.+) \(a new plan\)$/);
+    if (m && opened.has(m[1])) { droppedWants.add(m[1]); opened.delete(m[1]); }
   }
   const said = saidWants.size, kept = keptWants.size;
   keptAfter.sort((a, b) => a - b);
   const toPeople = memories.filter((m) => m.kind === "promise" || /\bpromised\b/i.test(m.text));
   return {
-    said, kept, stillOpen: opened.size,
+    said, kept, letGo: droppedWants.size, stillOpen: opened.size,
     medianMinutesToKeep: keptAfter.length ? keptAfter[keptAfter.length >> 1] : null,
     toPeople: toPeople.length,
     oldestToPeople: toPeople.map((m) => m.since).filter(Boolean).sort()[0] ?? null,

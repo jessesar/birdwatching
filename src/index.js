@@ -71,7 +71,9 @@ export async function collect(env, when = Date.now(), { feed: withFeed = true, e
       writes.push(
         env.DB.prepare(
           "INSERT OR IGNORE INTO entries (at, kind, text, why, tags, town, seen_at, judged) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-        ).bind(e.at, e.kind, e.text, e.why ?? null, encodeTags(tagText(e.text, e.why)), town, seenAt, e.kind === "felt" ? 1 : 0)
+        // "felt" entries are the town narrating him; the model never reads them, so
+        // they get no keyword tags either (a tune called "bakery smell riff" isn't Money).
+        ).bind(e.at, e.kind, e.text, e.why ?? null, e.kind === "felt" ? "" : encodeTags(tagText(e.text, e.why)), town, seenAt, e.kind === "felt" ? 1 : 0)
       );
     }
   } catch (err) {
@@ -146,10 +148,10 @@ async function judgeBatch(env, when) {
 
   let verdict = null;
   try {
-    const out = await env.AI.run(MODEL, { messages: judgeMessages(items), max_tokens: 400, temperature: 0 });
+    const out = await env.AI.run(MODEL, { messages: judgeMessages(items), max_tokens: 900, temperature: 0 });
     // When the answer doesn't say what it cost, assume a generous 200.
     await setMeta(env, "ai-budget", { day, neurons: used + (out?.usage?.neurons ?? 200) }).run();
-    verdict = parseJudgement(out?.response, items.map((i) => i.id));
+    verdict = parseJudgement(out?.response, items);
     if (!verdict) console.error("judge: unreadable answer", String(out?.response).slice(0, 300));
   } catch (err) {
     console.error("judge", err);

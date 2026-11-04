@@ -101,8 +101,9 @@ function ourFinding(key, o) {
   if (key === "promises") {
     const p = o.promises;
     if (!p?.said) return "No promises seen yet.";
-    return `Over the last two days he told himself he’d do ${p.said === 1 ? "one thing" : `${p.said} different things`} and did ${p.kept} of them` +
-      (p.medianMinutesToKeep == null ? "." : p.medianMinutesToKeep < 1 ? ", usually right away." : `, usually within ${Math.round(p.medianMinutesToKeep)} of our minutes.`) +
+    return `Over the last two days he told himself he’d do ${p.said === 1 ? "one thing" : `${p.said} different things`}, did ${p.kept} of them` +
+      (p.medianMinutesToKeep == null ? "" : p.medianMinutesToKeep < 1 ? " (usually right away)" : ` (usually within ${Math.round(p.medianMinutesToKeep)} of our minutes)`) +
+      (p.letGo ? ` and let go of ${p.letGo} for a new plan.` : ".") +
       (p.toPeople ? ` He still carries ${p.toPeople === 1 ? "a promise" : `${p.toPeople} promises`} to people${p.oldestToPeople ? `, the oldest since ${new Date(p.oldestToPeople).toLocaleDateString("en-GB", { day: "numeric", month: "long", timeZone: "UTC" })}` : ""}.` : "");
   }
   if (key === "bored") {

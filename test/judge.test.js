@@ -76,7 +76,7 @@ const rows = {
 test("the model's verdict replaces keyword tags and marks entries judged", async () => {
   const db = fakeDb(rows);
   let asked;
-  const AI = { run: async (model, input) => { asked = { model, input }; return { response: '{"matches":[{"id":"e1","tests":["edges"],"quote":"where the town just stops","reason":"He goes to the end of town."},{"id":"m7","tests":[],"hints":["sky"],"reason":"He notices the moon."}]}' }; } };
+  const AI = { run: async (model, input) => { asked = { model, input }; return { response: '{"matches":[{"id":"e1","tests":["edges"],"quote":"where the town just stops","reason":"He goes to the end of town."},{"id":"m7","tests":[],"hints":["sky"],"quote":"The moon sat lower","reason":"He notices the moon."}]}' }; } };
   await judge({ DB: db, AI }, Date.UTC(2026, 10, 3, 23, 45));
   assert.match(asked.model, /^@cf\//);
   assert.equal(asked.input.temperature, 0);
@@ -84,7 +84,7 @@ test("the model's verdict replaces keyword tags and marks entries judged", async
   assert.deepEqual(writes, [
     ["entries", [",edges,", "", "He goes to the end of town.", "where the town just stops", 1]],
     ["entries", ["", "", "", "", 2]],
-    ["memories", ["", ",sky,", "He notices the moon.", "", 7]],
+    ["memories", ["", ",sky,", "He notices the moon.", "The moon sat lower", 7]],
   ]);
   assert.ok(db.batches[0].every((s) => s.sql.includes("tagged_by = 'model', judged = 1")));
 });
@@ -146,4 +146,20 @@ test("counts what each call cost toward today's budget", async () => {
   await judge({ DB: db, AI }, when);
   const budget = db.runs.find((r) => r.args[0] === "ai-budget");
   assert.deepEqual(JSON.parse(budget.args[1]), { day: "2026-11-03", neurons: 42.5 });
+});
+
+test("a match only counts if its quoted evidence is really in that entry", () => {
+  const items = [{ id: "e1", text: "looking closely at something" }, { id: "e2", text: "A want: hunt the ghost line north for a ticket" }];
+  const v = parseJudgement(JSON.stringify({ matches: [
+    { id: "e1", tests: ["edges"], quote: "hunt the ghost line north", reason: "He searches for a ticket out." },
+    { id: "e2", tests: [], hints: ["edges"], quote: "hunt the ghost line north", reason: "He looks for a way out." },
+  ] }), items);
+  assert.deepEqual(v.get("e1").tests, []);
+  assert.deepEqual(v.get("e2").hints, ["edges"]);
+});
+
+test("asking for the time is held to a glimmer", () => {
+  const items = [{ id: "e1", text: "I dialed the payphone, asked for the time and the speaking clock barked it out" }];
+  const v = parseJudgement('{"matches":[{"id":"e1","tests":["time"],"quote":"asked for the time","reason":"He asks for the time."}]}', items);
+  assert.deepEqual([v.get("e1").tests, v.get("e1").hints], [[], ["time"]]);
 });

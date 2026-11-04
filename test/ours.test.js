@@ -35,7 +35,7 @@ test("two sleeps on one town day count as sleeping in pieces", () => {
 
 test("daytime rests while worn out are counted, and whether they helped", () => {
   const m = (rest, doing, asleep = false) => ({ realMs: 0, asleep, townMin: 1, rest, doing });
-  const day = [m(1, "walking"), m(1, "resting in the roost"), m(1, "resting in the roost"), m(1, "at the synth"),
+  const day = [m(1, "walking to his roost"), m(1, "resting in the roost"), m(1, "resting in the roost"), m(1, "at the synth"),
     m(1, "having a sit down at his roost"), m(0.8, "walking"), m(1, "asleep", true)];
   assert.deepEqual(learningToRest(day), { attempts: 2, helped: 1, sleeps: 0 });
 });
@@ -63,7 +63,10 @@ test("promises: what he said he'd do, what he did, and promises to people", () =
     e(1, "mind", "A want: spray a tag nearby (said it would)"),
     e(30, "mind", "Done with a want: check the heap for more filament (did it)"),
   ], [{ kind: "promise", text: "I promised cheerfulFerret82 I'd hunt the junk heap", since: "2026-10-16T18:47:21Z" }]);
-  assert.deepEqual(r, { said: 2, kept: 1, stillOpen: 1, medianMinutesToKeep: 30, toPeople: 1, oldestToPeople: "2026-10-16T18:47:21Z" });
+  assert.deepEqual(r, { said: 2, kept: 1, letGo: 0, stillOpen: 1, medianMinutesToKeep: 30, toPeople: 1, oldestToPeople: "2026-10-16T18:47:21Z" });
+  // A want closed for a new plan is let go, not kept and not still open.
+  const dropped = keepingPromises([e(0, "mind", "A want: y (said it would)"), e(3, "mind", "Done with a want: y (a new plan)")]);
+  assert.deepEqual([dropped.kept, dropped.letGo, dropped.stillOpen], [0, 1, 0]);
   // The same want said again doesn't count twice.
   const again = keepingPromises([e(0, "mind", "A want: x (said it would)"), e(5, "mind", "A want: x (said it would)"), e(9, "mind", "Done with a want: x (did it)")]);
   assert.deepEqual([again.said, again.kept], [1, 1]);
