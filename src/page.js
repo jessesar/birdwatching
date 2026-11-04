@@ -28,7 +28,7 @@ const ICONS = {
   edges: `<path d="M4 34h27"/><path class="ico-move" d="M8 26c0-5 4-8 9-8 3 0 5 1 6 3l4-1-3 3c0 5-4 8-9 8-4 0-7-2-7-5zM13 33v1.5M17 33v1.5"/><circle class="ico-move" cx="21.5" cy="20.5" r=".7" fill="currentColor"/><path d="M34 6v28" stroke-dasharray="2 3"/>`,
   time: `<path d="M13 35V14l7-8 7 8v21z"/><circle cx="20" cy="19" r="4.2"/><path class="ico-hand" d="M20 19v-3"/><path d="M20 19l2 1.2M17 35v-7h6v7"/>`,
   shops: `<path d="M5 14l3-6h24l3 6z"/><path d="M7 14v21h26V14M17 35v-9h6v9"/><g class="ico-bell"><path d="M29.5 17v2"/><path d="M27.5 23a2 2 0 0 1 4 0z"/></g>`,
-  money: `<path d="M6 25c4-8 22-8 26 0-3 4-8 6-13 6s-10-2-13-6z"/><path d="M14 20l2 9M19 19v11M24 20l-2 9"/><g class="ico-coin"><circle cx="31" cy="10" r="4"/><path d="M31 8v4"/></g>`,
+  money: `<path d="M5 26a9 3.2 0 0 0 18 0a9 3.2 0 0 0-18 0v4a9 3.2 0 0 0 18 0v-4"/><path d="M5 30v4a9 3.2 0 0 0 18 0v-4"/><g class="ico-coin"><circle cx="28" cy="13" r="8"/><path d="M30.6 9.8a2.4 2.4 0 0 0-4.6 1V17M24.4 13.6h4.2M24.2 17h6.6"/></g>`,
   sky: `<path d="M25 7a11 11 0 1 0 8.5 18.5A9 9 0 1 1 25 7z"/><path class="ico-star" d="M10 6q.8 4.2 5 5-4.2.8-5 5-.8-4.2-5-5 4.2-.8 5-5z"/>`,
 };
 const icon = (key) =>
@@ -216,12 +216,10 @@ h1{font:500 clamp(30px,5.4vw,52px)/1.05 var(--text);letter-spacing:-.015em;margi
 .mark span{font-weight:600;font-size:14px}
 .mark small{font-size:12px;color:var(--ash)}
 .mark:hover span{color:var(--lamp)}
-.roost-label{position:absolute;z-index:3;transform:translate(-50%,-100%);display:grid;justify-items:center;gap:1px;text-align:center;line-height:1.25;white-space:nowrap;cursor:help;padding:2px 6px}
+.roost-label{position:absolute;z-index:3;transform:translate(-50%,-100%);display:grid;justify-items:center;gap:1px;text-align:center;line-height:1.25;white-space:nowrap;padding:2px 6px;pointer-events:none}
 .roost-label b{font-weight:600;font-size:13px}
 .roost-label span{font-size:12px;color:var(--ash)}
-.roost-label q{display:none;white-space:normal;width:min(260px,70vw);font-size:13px;color:var(--ivory);background:rgba(13,10,8,.88);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;margin-top:6px}
-.roost-label:hover q,.roost-label:focus q{display:block}
-.roost-label:focus-visible{outline:2px solid var(--lamp);outline-offset:3px;border-radius:4px}
+
 /* The star itself is part of the link: a round hit area over it, above the label. */
 .mark::before{content:"";position:absolute;left:50%;top:-34px;width:40px;height:40px;transform:translateX(-50%);border-radius:50%}
 
@@ -390,7 +388,7 @@ footer a{text-underline-offset:3px}
     <p class="sub"><span>An observatory for the five tests on Pino’s page <a href="https://pino-the-bird.github.io/limits/">Testing the Town’s Walls</a>.</span> <span>Each star is one test. It brightens when his words touch it.</span></p>
   </div>
   ${marks(data)}
-  <div class="roost-label" id="roost-label" tabindex="0"><b>Pino’s roost</b><span id="roost-state">${data.now?.asleep ? "asleep" : "awake"}</span><q id="roost-thought">${esc(data.now?.thought ?? "")}</q></div>
+  <div class="roost-label" id="roost-label"><b>Pino’s roost</b><span id="roost-state">${data.now?.asleep ? "asleep" : "awake"}</span></div>
 </header>
 
 <section class="ground gutter" aria-label="His town now, and his clock beside ours">
@@ -880,7 +878,6 @@ ${data.tests.map((t) => testItem(t, data)).join("\n")}
       nowEl.innerHTML = '<span class="when">' + when + '</span><span class="doing">' + esc(n.doing) + quiet + "</span>" +
         (n.thought ? '<span class="thought"><span>thinking</span> <q>' + esc(n.thought) + "</q></span>" : "");
       D.asleep = Boolean(n.asleep);
-      document.getElementById("roost-thought").textContent = n.thought ?? "";
     }
     if (d.lastReading) D.last = d.lastReading;
     const measured = d.clock && d.clock.verdict.state !== "measuring";
