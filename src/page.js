@@ -1032,8 +1032,8 @@ ${ourTests(data)}
   // still. With no comfortable hand he waits at the pin; asleep too.
   const tiny = document.getElementById("tiny-pino");
   const HANDS = { s: 48, m: 44, h: 28 };
-  const SIZE = 1.25, WALK = 26, GLIDE = 52, LOOKAHEAD_S = 2.5;
-  let perch = "pin", r = 0, lastT = 0, facing = 1, stillSince = 0, sit = 0;
+  const SIZE = 1.25, WALK = 26, GLIDE = 52;
+  let perch = "pin", r = 0, lastT = 0, facing = 1, stillSince = 0, sit = 0, movedAt = 0;
   const tinyUpper = document.getElementById("tiny-upper"), tinyLegs = document.getElementById("tiny-legs");
   let secondWasComfy = false, rejoinSecond = true;
   const at = (deg, rr) => [Math.sin((deg * Math.PI) / 180) * rr, -Math.cos((deg * Math.PI) / 180) * rr];
@@ -1046,10 +1046,13 @@ ${ourTests(data)}
     const deg = { s: ((mins * 60) % 60) * 6, m: (mins % 60) * 6, h: ((mins / 60) % 12) * 30 };
     // Degrees per real second for each hand, at his clock's measured speed.
     const speed = D.rate ? { s: 6 * D.rate, m: 0.1 * D.rate, h: D.rate / 120 } : { s: 0, m: 0, h: 0 };
-    const within = (p, test) => {
+    // Exactly how long until a hand crosses the edge of his comfortable zone
+    // (40, 140, 220 or 320 degrees), so his pace stays smooth.
+    const EDGES = [40, 140, 220, 320];
+    const untilEdge = (p) => {
       if (!speed[p]) return Infinity;
-      for (let t = 0.05; t <= LOOKAHEAD_S; t += 0.05) if (test(deg[p] + speed[p] * t)) return t;
-      return Infinity;
+      const d = ((deg[p] % 360) + 360) % 360;
+      return (Math.min(...EDGES.map((e) => (e > d + 1e-9 ? e : e + 360))) - d) / speed[p];
     };
 
     // When the second hand swings away, decide whether to rejoin it next round.
@@ -1068,8 +1071,8 @@ ${ourTests(data)}
     // How soon he'll have to move: his hand getting steep, or the second hand
     // coming round (if he means to rejoin it).
     let soon = Infinity;
-    if (perch === "s") soon = within("s", (d) => !comfy(d));
-    else if (perch !== "pin") soon = Math.min(D.rate && rejoinSecond ? within("s", comfy) : Infinity, within(perch, (d) => !comfy(d)));
+    if (perch === "s") soon = untilEdge("s");
+    else if (perch !== "pin") soon = Math.min(D.rate && rejoinSecond && !secondComfy ? untilEdge("s") : Infinity, comfy(deg[perch]) ? untilEdge(perch) : 0);
 
     // Where he wants to stand on his hand: at the tip, or near enough to the pin
     // to reach it in time. He walks there at his own pace, never faster.
@@ -1083,7 +1086,10 @@ ${ourTests(data)}
     const before = r, step = needMove && sit > 0.05 ? 0 : (downhill ? GLIDE : WALK) * dt;
     r += Math.max(-step, Math.min(step, target - r));
     if (want !== perch && r <= 0.01) { perch = want; r = 0; }
-    const walking = Math.abs(r - before) > 1e-3;
+    // He counts as walking until he's really stopped, so the waddle doesn't
+    // flicker on and off between steps.
+    if (Math.abs(r - before) > 1e-3) movedAt = now;
+    const walking = now - movedAt < 160;
     const gliding = walking && downhill;
 
     // At the pin he stands on its top; out on a hand, at its point r from the centre.
@@ -1096,7 +1102,7 @@ ${ourTests(data)}
     }
     // Standing still for a moment, he sits down: body lowered onto the hand,
     // legs tucked away. He gets up again before he moves.
-    if (needMove) stillSince = now;
+    if (needMove || walking) stillSince = now;
     const sitting = now - stillSince > 1400;
     sit += Math.max(-dt / 0.25, Math.min(dt / 0.35, (sitting ? 1 : 0) - sit));
     if (tinyUpper) tinyUpper.setAttribute("transform", "translate(0 " + (2.2 * sit).toFixed(2) + ")");
