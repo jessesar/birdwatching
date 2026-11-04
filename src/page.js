@@ -1025,7 +1025,9 @@ ${ourTests(data)}
   // hand, which races round; when it gets steep he moves to the minute or hour
   // hand (at random if both are comfortable). There he settles in for a good
   // while (6 to 14 seconds), until watching the second hand go round makes him
-  // curious enough to head back to it, when he can reach it in time.
+  // curious enough to head back to it. He only joins it while it's climbing (the
+  // left side, 220 to 320 degrees) and when he can reach it in time; a hand on
+  // its way down would only take him somewhere he'd have to leave.
   // He walks, and never floats upwards: uphill or level he waddles at his own
   // pace; downhill he glides, faster, leaning forward. All hands meet at the pin,
   // so to change hands he heads in along his hand, timed to reach the pin just as
@@ -1061,7 +1063,11 @@ ${ourTests(data)}
     const secondComfy = Boolean(D.rate) && comfy(deg.s);
     const sat = (now - arrivedAt) / 1000;
     const curious = (t) => perch !== "s" && sat + t >= boredAfter;
-    const canReach = secondComfy && untilEdge("s") > r / WALK + 0.6;
+    const sd = ((deg.s % 360) + 360) % 360;
+    const climbing = Boolean(D.rate) && sd >= 220 && sd <= 320;
+    const canReach = climbing && untilEdge("s") > r / WALK + 0.6;
+    // Time until the second hand starts its next climb.
+    const untilClimb = D.rate ? (((220 - sd) % 360) + 360) % 360 / speed.s : Infinity;
 
     let want = perch;
     if (D.asleep || still) want = "pin";
@@ -1076,7 +1082,7 @@ ${ourTests(data)}
     // coming round (if he means to rejoin it).
     let soon = Infinity;
     if (perch === "s") soon = untilEdge("s");
-    else if (perch !== "pin") soon = Math.min(D.rate && !secondComfy && curious(untilEdge("s")) ? untilEdge("s") : Infinity, comfy(deg[perch]) ? untilEdge(perch) : 0);
+    else if (perch !== "pin") soon = Math.min(D.rate && !climbing && curious(untilClimb) ? untilClimb : Infinity, comfy(deg[perch]) ? untilEdge(perch) : 0);
 
     // Where he wants to stand on his hand: at the tip, or near enough to the pin
     // to reach it in time. He walks there at his own pace, never faster.
