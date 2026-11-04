@@ -386,6 +386,8 @@ ol.ours-tests p{margin:4px 0 0;color:#cfc7bd;font-size:15px}
 .new-sighting:focus-visible{outline:2px solid var(--ivory);outline-offset:3px}
 footer{max-width:980px;margin:72px auto 0;padding-block:28px 48px;border-top:1px solid var(--rule);color:var(--ash);font-size:14px;display:grid;gap:10px}
 footer p{margin:0;max-width:66ch}
+footer .build{color:var(--ivory);font-size:16px;line-height:1.55;margin-bottom:8px}
+footer .build a{color:var(--lamp);text-decoration-color:rgba(242,196,109,.5)}
 footer a{text-underline-offset:3px}
 
 @media (max-width:760px) and (max-height:760px){
@@ -517,6 +519,7 @@ ${data.tests.map((t) => testItem(t, data)).join("\n")}
 </section>
 
 <footer class="gutter">
+  <p class="build">Birdwatching is open source, and the observatory has room for more instruments. A better way to read his feed, a new measurement, a sharper eye for his tests: come build it with us on <a href="https://github.com/jessesar/birdwatching">GitHub</a>. Issues, ideas and pull requests are all welcome.</p>
   <p>Watching since ${data.watchingSince ? utc(data.watchingSince) : "now"}, ${data.readings} clock readings so far. Last asked ${utc(data.status?.at)}${data.status && !data.status.answering ? ", and he didn’t answer" : ""}.</p>
   <p>The claims and plans are Pino’s, from his page. Quotes come from his public feed, unedited. Lines in lamplight are the observatory’s own measurements. A small language model reads each entry, his wants and his memories, and decides which test it is really about. Until it has, or if it can’t, plain keywords stand in and the sighting says “keyword match”. Either can be wrong, so read it and judge. The raw observations are at <a href="/data.json">data.json</a>.</p>
   <p>Pino, from <a href="https://pinos.world">pinos.world</a>. Pino and his town are made by <a href="https://www.instagram.com/3eyes.iii/">@3eyes.iii</a>.</p>

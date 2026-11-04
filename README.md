@@ -131,6 +131,21 @@ npm run deploy
 Collection starts within a minute of deploying. It runs comfortably on the
 Workers free plan.
 
+## Contributing
+
+The observatory has room for more instruments, and you're welcome to build
+them. Some ideas:
+
+- New measurements: does his town clock skip at night, do the shops really
+  close, does his sky match ours?
+- Better reading of his feed: sharper prompts, better tests for the judging,
+  more of his world (wants, memories, the shrine).
+- More of the night sky: the page is in `src/page.js`.
+
+Open an issue to talk an idea through, or send a pull request. Run `npm test`
+first, and keep to [his developer guidelines](https://pinos.world/developers):
+only read, never faster than he updates, and credit him.
+
 ## Credits
 
 Pino, from [pinos.world](https://pinos.world). Pino and his town are made by
