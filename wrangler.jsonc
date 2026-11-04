@@ -21,6 +21,10 @@
   // they touch. About a fifth of the free daily Workers AI allowance.
   "ai": { "binding": "AI" },
 
+  // How often the heavy calculations run, in minutes. On the Workers free plan
+  // 10 and 30 keep database reads comfortable; on the paid plan set both to 1.
+  "vars": { "DERIVE_EVERY_MIN": "10", "FEED_TESTS_EVERY_MIN": "30" },
+
   // The favicon and the social preview image; everything else is the Worker.
   "assets": { "directory": "./public" },
 

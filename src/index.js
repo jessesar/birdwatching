@@ -1,16 +1,17 @@
 import { TESTS, tagText, encodeTags, townMinutes, clockRate, timeVerdict, moon } from "./observe.js";
 import { renderPage, timeFinding, clockNote, SITE } from "./page.js";
-import { ourTests } from "./ours.js";
+import { ourTests, feedTests } from "./ours.js";
 import { MODEL, judgeMessages, parseJudgement } from "./judge.js";
 
 const API = "https://pinos.world/api/v1";
 const USER_AGENT = "birdwatching/1.0 (read-only; polls on Pino's clock)";
 const CLOCK_WINDOW_MS = 72 * 3600 * 1000;
 const MOMENTS_WINDOW_MS = 72 * 3600 * 1000;
-// The clock speed and our tests read thousands of rows, so they're worked out
-// every ten minutes rather than every minute; that keeps the database reads
-// well inside the free plan.
-const DERIVE_EVERY_MIN = 10;
+// The clock speed and our tests read thousands of rows. How often they're worked
+// out is a setting (wrangler.jsonc vars): every 10 and 30 minutes keeps the
+// free plan's database reads comfortable; on the paid plan both can be 1.
+const every = (env, key, fallback) => Math.max(1, Number(env[key]) || fallback);
+const FEED_WINDOW_MS = 48 * 3600 * 1000;
 const SIGHTINGS_PER_TEST = 12;
 // How much the model reads per run, and how long an entry may wait for it
 // before its keyword tags are taken as final.
@@ -53,9 +54,9 @@ export async function collect(env, when = Date.now()) {
     setMeta(env, "now", now),
   ];
   writes.push(env.DB.prepare(
-    "INSERT OR IGNORE INTO moments (at, real_ms, asleep, town_min, rest, energy, mood, doing, thought) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    "INSERT OR IGNORE INTO moments (at, real_ms, asleep, town_min, rest, energy, mood, doing, thought, social) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
   ).bind(now.at, Date.parse(now.at), now.asleep ? 1 : 0, clockReadable ? townMinutes(now.world.day, now.world.time) : null,
-    now.needs?.rest ?? null, now.feeling?.energy ?? null, now.feeling?.mood ?? null, now.doing ?? null, now.thought ?? null));
+    now.needs?.rest ?? null, now.feeling?.energy ?? null, now.feeling?.mood ?? null, now.doing ?? null, now.thought ?? null, now.needs?.social ?? null));
   if (clockReadable) {
     writes.push(env.DB.prepare(
       "INSERT OR IGNORE INTO clock (at, real_ms, town_day, town_time, town_min, asleep, doing) VALUES (?, ?, ?, ?, ?, ?, ?)"
@@ -187,24 +188,39 @@ export async function derive(env, at = Date.now()) {
   const [clockRows, momentRows] = await Promise.all([
     db.prepare("SELECT real_ms, town_min FROM clock WHERE at >= ? ORDER BY at")
       .bind(new Date(at - CLOCK_WINDOW_MS).toISOString()).all(),
-    db.prepare("SELECT real_ms, asleep, town_min, rest, energy, mood, doing, thought FROM moments WHERE at >= ? ORDER BY at")
+    db.prepare("SELECT real_ms, asleep, town_min, rest, energy, mood, doing, thought, social FROM moments WHERE at >= ? ORDER BY at")
       .bind(new Date(at - MOMENTS_WINDOW_MS).toISOString()).all(),
   ]);
   return {
     clock: clockRate(clockRows.results.map((r) => ({ realMs: r.real_ms, town: r.town_min }))),
     // Clock readings fill gaps in the moments: each one is an awake moment with a town time.
-    ours: ourTests(mergeMoments(
-      momentRows.results.map((m) => ({
-        realMs: m.real_ms, asleep: Boolean(m.asleep), townMin: m.town_min, rest: m.rest, energy: m.energy, mood: m.mood, doing: m.doing, thought: m.thought,
-      })),
-      clockRows.results.map((r) => ({ realMs: r.real_ms, asleep: false, townMin: r.town_min }))
-    )),
+    ours: ourTests(mergeMoments(toMoments(momentRows.results), clockRows.results.map((r) => ({ realMs: r.real_ms, asleep: false, townMin: r.town_min })))),
   };
+}
+
+const toMoments = (rows) => rows.map((m) => ({
+  realMs: m.real_ms, asleep: Boolean(m.asleep), townMin: m.town_min, rest: m.rest, energy: m.energy, mood: m.mood, doing: m.doing, thought: m.thought, social: m.social,
+}));
+
+// Tests read from his feed: promises, boredom, persistence, needing others.
+export async function deriveFeed(env, at = Date.now()) {
+  const db = env.DB;
+  const since = new Date(at - FEED_WINDOW_MS).toISOString();
+  const [entries, moments, memories] = await Promise.all([
+    db.prepare("SELECT at, kind, text FROM entries WHERE at >= ? AND kind IN ('mind', 'felt', 'did')").bind(since).all(),
+    db.prepare("SELECT real_ms, mood, social FROM moments WHERE at >= ? ORDER BY at").bind(since).all(),
+    db.prepare("SELECT text, kind, since FROM memories WHERE kind = 'promise' OR text LIKE '%promised%'").all(),
+  ]);
+  return feedTests(
+    entries.results.map((e) => ({ at: Date.parse(e.at), kind: e.kind, text: e.text })),
+    moments.results.map((m) => ({ realMs: m.real_ms, mood: m.mood, social: m.social })),
+    memories.results
+  );
 }
 
 export async function observations(env, at = Date.now(), derived = null) {
   const db = env.DB;
-  const { clock, ours } = derived ?? (await derive(env, at));
+  const { clock, ours, feed } = derived ?? { ...(await derive(env, at)), feed: await deriveFeed(env, at) };
   const [watching, now, status, latest] = await Promise.all([
     // MIN(at) reads one index entry; the highest rowid is the count (rows are never deleted).
     db.prepare("SELECT (SELECT at FROM clock ORDER BY at LIMIT 1) AS since, (SELECT MAX(rowid) FROM clock) AS readings").first(),
@@ -253,7 +269,7 @@ export async function observations(env, at = Date.now(), derived = null) {
     // The last time his town clock could be read (not while he sleeps).
     lastReading: latest && { realMs: latest.real_ms, town: latest.town_min },
     realMoon: moon(at),
-    ours,
+    ours: ours && { ...ours, ...(feed ?? {}) },
     tests,
   };
 }
@@ -265,11 +281,12 @@ const SNAPSHOT_TTL_MS = 15 * 1000;
 let cached = null;
 
 export async function snapshot(env, when = Date.now()) {
-  let derived = new Date(when).getUTCMinutes() % DERIVE_EVERY_MIN === 0 ? null : await readMeta(env, "derived");
-  if (!derived) {
-    derived = await derive(env, when);
-    await setMeta(env, "derived", derived).run();
-  }
+  const minute = Math.floor(when / 60000);
+  const stored = await readMeta(env, "derived");
+  let derived = stored;
+  if (!stored || minute % every(env, "DERIVE_EVERY_MIN", 10) === 0) derived = { ...stored, ...(await derive(env, when)) };
+  if (!derived.feed || minute % every(env, "FEED_TESTS_EVERY_MIN", 30) === 0) derived = { ...derived, feed: await deriveFeed(env, when) };
+  if (derived !== stored) await setMeta(env, "derived", derived).run();
   await setMeta(env, "snapshot", await observations(env, when, derived)).run();
 }
 

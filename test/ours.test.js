@@ -52,3 +52,51 @@ test("without a reading soon after waking, the night's length stays unknown", ()
   const gap = night.slice(0, 4).concat([{ ...night[4], realMs: 40 * min }]);
   assert.equal(sleepRhythm(gap).nights, 0);
 });
+
+import { keepingPromises, gettingBored, persisting, needingOthers } from "../src/ours.js";
+
+const e = (minute, kind, text) => ({ at: minute * min, kind, text });
+
+test("promises: what he said he'd do, what he did, and promises to people", () => {
+  const r = keepingPromises([
+    e(0, "mind", "A want: check the heap for more filament (said it would)"),
+    e(1, "mind", "A want: spray a tag nearby (said it would)"),
+    e(30, "mind", "Done with a want: check the heap for more filament (did it)"),
+  ], [{ kind: "promise", text: "I promised cheerfulFerret82 I'd hunt the junk heap", since: "2026-10-16T18:47:21Z" }]);
+  assert.deepEqual(r, { said: 2, kept: 1, stillOpen: 1, medianMinutesToKeep: 30, toPeople: 1, oldestToPeople: "2026-10-16T18:47:21Z" });
+  // The same want said again doesn't count twice.
+  const again = keepingPromises([e(0, "mind", "A want: x (said it would)"), e(5, "mind", "A want: x (said it would)"), e(9, "mind", "Done with a want: x (did it)")]);
+  assert.deepEqual([again.said, again.kept], [1, 1]);
+});
+
+test("boredom: does he move on when something does less for him?", () => {
+  const r = gettingBored([
+    e(0, "felt", "Walking somewhere did less for you than it used to. You've been doing it a lot."),
+    e(1, "did", "patching a tune on the synth"),
+    e(5, "felt", "Patching a tune on the synth did less for you than it used to. You've been doing it a lot."),
+    e(6, "did", "patching a tune on the synth"),
+  ]);
+  assert.deepEqual(r, { signals: 2, movedOn: 1, keptAtIt: 1 });
+});
+
+test("persistence: failed sittings, going back, and the longest run of versions", () => {
+  const r = persisting([
+    e(0, "felt", "A whole sitting at a piece of music and nothing came of it that would play: it would not play."),
+    e(20, "mind", "Started something: a piece of music (it began)"),
+    e(30, "mind", 'Heard "payphone echo" back (version 9): decent sketch'),
+    e(31, "mind", 'Heard "payphone lift" back (version 8): monotonous'),
+    e(40, "felt", "A whole sitting at a piece of music and nothing came of it that would play: no notes."),
+    e(200, "mind", "Started something: a piece of music (it began)"),
+    e(210, "mind", "Finished with a piece: payphone lift variation (finished as it was)"),
+  ]);
+  assert.deepEqual(r, { failures: 2, wentBack: 1, finished: 1, longestPiece: "payphone echo", longestVersions: 9 });
+});
+
+test("needing others: his mood after contact against an ordinary ten minutes", () => {
+  const moments = Array.from({ length: 40 }, (_, i) => ({ realMs: i * min, mood: i >= 21 ? 0.4 : 0, social: 0.1 }));
+  const r = needingOthers([e(20, "did", "calling out from the payphone")], moments);
+  assert.equal(r.contacts, 1);
+  assert.equal(r.moodAfterContact, 0.4);
+  assert.ok(r.moodOrdinary < 0.4);
+  assert.ok(Math.abs(r.companyNeed - 0.1) < 1e-9);
+});

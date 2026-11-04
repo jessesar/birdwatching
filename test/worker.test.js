@@ -123,7 +123,9 @@ test("renders a fresh observatory with no readings yet", () => {
   const html = renderPage(pageData({ now: null, status: null, readings: 0, watchingSince: null, lastReading: null }));
   assert.ok(html.includes("No readings yet."));
   assert.ok(html.includes("Watching since now"));
-  assert.equal(html.match(/class="mark"/g).length, 5);
+  assert.equal(html.match(/class="mark[ "]/g).length, 5);
+  // Unseen stars explain their test on hover.
+  assert.ok(html.includes("Whether his town has an edge."));
 });
 
 test("a glimmer shows as a glimmer, with evidence highlighted and the reasoning labelled as ours", () => {

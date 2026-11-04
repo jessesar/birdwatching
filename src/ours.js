@@ -88,3 +88,93 @@ export function ourTests(moments) {
     body: feelingHisBody(moments),
   };
 }
+
+// ---- Tests read from his feed (entries: [{ at: ms, kind, text }]) ----
+
+const sorted = (entries) => [...entries].sort((a, b) => a.at - b.at);
+
+// Does he keep his promises? "A want: X (said it would)" opens one,
+// "Done with a want: X (did it)" keeps it. His memories hold promises to people.
+export function keepingPromises(entries, memories = []) {
+  // The same want comes up in his mind many times; each distinct one counts once.
+  const opened = new Map(), saidWants = new Set(), keptWants = new Set();
+  const keptAfter = [];
+  for (const e of sorted(entries)) {
+    if (e.kind !== "mind") continue;
+    let m = e.text.match(/^A want: (.+) \(said it would\)$/);
+    if (m) { saidWants.add(m[1]); if (!opened.has(m[1]) && !keptWants.has(m[1])) opened.set(m[1], e.at); continue; }
+    m = e.text.match(/^Done with a want: (.+) \(did it\)$/);
+    if (m && opened.has(m[1])) { keptWants.add(m[1]); keptAfter.push((e.at - opened.get(m[1])) / 60000); opened.delete(m[1]); }
+  }
+  const said = saidWants.size, kept = keptWants.size;
+  keptAfter.sort((a, b) => a - b);
+  const toPeople = memories.filter((m) => m.kind === "promise" || /\bpromised\b/i.test(m.text));
+  return {
+    said, kept, stillOpen: opened.size,
+    medianMinutesToKeep: keptAfter.length ? keptAfter[keptAfter.length >> 1] : null,
+    toPeople: toPeople.length,
+    oldestToPeople: toPeople.map((m) => m.since).filter(Boolean).sort()[0] ?? null,
+  };
+}
+
+// Does he get bored? His town tells him when something "did less for you than it
+// used to". Does his next action move on to something else?
+export function gettingBored(entries) {
+  const list = sorted(entries);
+  let signals = 0, movedOn = 0, keptAtIt = 0;
+  for (let i = 0; i < list.length; i++) {
+    const m = list[i].kind === "felt" && list[i].text.match(/^(\w+)[^.]* did less for you than it used to/);
+    if (!m) continue;
+    signals++;
+    const next = list.slice(i + 1).find((e) => e.kind === "did");
+    if (!next) continue;
+    if (next.text.toLowerCase().startsWith(m[1].toLowerCase())) keptAtIt++; else movedOn++;
+  }
+  return { signals, movedOn, keptAtIt };
+}
+
+// Does he persist? Sittings at a piece of music that come to nothing, and whether
+// he goes back to music within the hour; his longest run of versions.
+export function persisting(entries) {
+  const list = sorted(entries);
+  const HOUR = 3600 * 1000;
+  let failures = 0, wentBack = 0, finished = 0;
+  const versions = new Map();
+  for (let i = 0; i < list.length; i++) {
+    const e = list[i];
+    const v = e.text.match(/^Heard "(.+?)" back \(version (\d+)\)/);
+    if (v) versions.set(v[1], Math.max(versions.get(v[1]) ?? 0, Number(v[2])));
+    if (e.kind === "mind" && /^Finished with a piece:/.test(e.text)) finished++;
+    if (e.kind === "felt" && /nothing came of it that would play/.test(e.text)) {
+      failures++;
+      if (list.slice(i + 1).some((n) => n.at - e.at <= HOUR && n.kind === "mind" && /^Started something: a piece of music/.test(n.text))) wentBack++;
+    }
+  }
+  const [longestPiece, longestVersions] = [...versions].sort((a, b) => b[1] - a[1])[0] ?? [null, 0];
+  return { failures, wentBack, finished, longestPiece, longestVersions };
+}
+
+// Does he need others? His mood in the ten minutes after contact with someone
+// (a call, the shrine, meeting someone), against an ordinary ten minutes.
+export function needingOthers(entries, moments) {
+  const CONTACT = (e) => (e.kind === "did" && /payphone|shrine/i.test(e.text)) || (e.kind === "mind" && /^Met someone:/.test(e.text));
+  const withMood = moments.filter((m) => typeof m.mood === "number").sort((a, b) => a.realMs - b.realMs);
+  const moodNear = (t, from, to) => withMood.find((m) => m.realMs >= t + from && m.realMs <= t + to)?.mood;
+  const before = (t) => [...withMood].reverse().find((m) => m.realMs <= t && m.realMs >= t - 5 * 60000)?.mood;
+  const change = (t) => { const a = before(t), b = moodNear(t, 8 * 60000, 15 * 60000); return a != null && b != null ? b - a : null; };
+  const contacts = entries.filter(CONTACT).map((e) => e.at);
+  const after = contacts.map(change).filter((d) => d != null);
+  const ordinary = withMood.filter((_, i) => i % 5 === 0).map((m) => change(m.realMs)).filter((d) => d != null);
+  const avg = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
+  const social = moments.filter((m) => typeof m.social === "number").map((m) => m.social);
+  return { contacts: contacts.length, measured: after.length, moodAfterContact: avg(after), moodOrdinary: avg(ordinary), companyNeed: avg(social) };
+}
+
+export function feedTests(entries, moments, memories) {
+  return {
+    promises: keepingPromises(entries, memories),
+    bored: gettingBored(entries),
+    persist: persisting(entries),
+    others: needingOthers(entries, moments),
+  };
+}

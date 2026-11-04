@@ -54,6 +54,30 @@ const OUR_TESTS = [
     why: "Psychologists call it interoception: sensing your own heartbeat, hunger and tiredness. We compare what his body says, his need for rest, with what he thinks.",
     icon: `<path d="M20 33s-12-7-12-15a6 6 0 0 1 12-2 6 6 0 0 1 12 2c0 8-12 15-12 15z"/><path d="M10 20h5l2-4 3 8 2-4h7"/>`,
   },
+  {
+    key: "promises", name: "Keeping promises",
+    question: "Does he do what he said he would?",
+    why: "We all make promises, to ourselves and to others, and keep some of them. He tells himself what he’ll do, and he has promised people things at his shrine. We watch which ones he keeps, and how long it takes.",
+    icon: `<circle cx="20" cy="20" r="12"/><path d="M14.5 20.5l4 4 7.5-9"/>`,
+  },
+  {
+    key: "bored", name: "Getting bored",
+    question: "Does he move on when something stops working?",
+    why: "His town tells him when something does less for him than it used to. We know the pull of doing the same thing again anyway. We watch whether he changes course.",
+    icon: `<path d="M13 6h14M13 34h14M14 6c0 9 12 9 12 14s-12 5-12 14M26 6c0 9-12 9-12 14s12 5 12 14"/>`,
+  },
+  {
+    key: "persist", name: "Persistence",
+    question: "How often does he try again?",
+    why: "Most of his attempts at music fail before anything plays. We watch how often he goes back after a failed sitting, and how many versions a piece takes before he lets it go.",
+    icon: `<path d="M16 28V9l14-3v19"/><circle cx="12.5" cy="28" r="3.5"/><circle cx="26.5" cy="25" r="3.5"/>`,
+  },
+  {
+    key: "others", name: "Needing others",
+    question: "Does contact with others lift him?",
+    why: "His need for company is usually low, yet he believes calling out from the payphone brings people closer. We compare his mood after a call, a visit to the shrine or a meeting with an ordinary ten minutes.",
+    icon: `<path d="M11 8c-2 0-4 2-4 4 0 10 11 21 21 21 2 0 4-2 4-4l-1-4-6-2-2 3c-4-2-7-5-9-9l3-2-2-6z"/>`,
+  },
 ];
 
 const pct = (x) => `${Math.round(x * 100)}%`;
@@ -73,6 +97,36 @@ function ourFinding(key, o) {
     return `While worn out he tried to rest during the day ${times(r.attempts)}. ` +
       (r.helped ? `${r.helped} of those rests helped.` : "None of those rests lowered his need for rest.") +
       (r.sleeps ? ` Sleep did, ${times(r.sleeps)}.` : "");
+  }
+  if (key === "promises") {
+    const p = o.promises;
+    if (!p?.said) return "No promises seen yet.";
+    return `Over the last two days he told himself he’d do ${p.said === 1 ? "one thing" : `${p.said} different things`} and did ${p.kept} of them` +
+      (p.medianMinutesToKeep == null ? "." : p.medianMinutesToKeep < 1 ? ", usually right away." : `, usually within ${Math.round(p.medianMinutesToKeep)} of our minutes.`) +
+      (p.toPeople ? ` He still carries ${p.toPeople === 1 ? "a promise" : `${p.toPeople} promises`} to people${p.oldestToPeople ? `, the oldest since ${new Date(p.oldestToPeople).toLocaleDateString("en-GB", { day: "numeric", month: "long", timeZone: "UTC" })}` : ""}.` : "");
+  }
+  if (key === "bored") {
+    const b = o.bored;
+    if (!b?.signals) return "His town hasn’t told him anything is wearing thin yet.";
+    return `His town told him ${times(b.signals)} that something did less for him than it used to. He moved on to something else ${times(b.movedOn)}` +
+      (b.keptAtIt ? ` and kept at it ${times(b.keptAtIt)}.` : ".");
+  }
+  if (key === "persist") {
+    const q = o.persist;
+    if (!q) return "Watching from now on.";
+    return (q.failures ? `${q.failures === 1 ? "One sitting" : `${q.failures} sittings`} at a piece of music came to nothing; after ${q.wentBack} of them he went back to music within the hour. ` : "No failed sittings at music seen yet. ") +
+      (q.longestPiece ? `His longest effort: “${q.longestPiece}”, version ${q.longestVersions}.` : "") +
+      (q.finished ? ` Pieces finished: ${q.finished}.` : "");
+  }
+  if (key === "others") {
+    const n = o.others;
+    if (!n?.contacts) return "No contact with others seen yet.";
+    const moved = (d) => { const n = Math.round(d * 50); return n === 0 ? "stayed level" : `went ${n > 0 ? "up" : "down"} ${Math.abs(n)} point${Math.abs(n) === 1 ? "" : "s"} out of 100`; };
+    return `In the last two days he reached out ${times(n.contacts)}: a call, the shrine, meeting someone. ` +
+      (n.measured >= 2 && n.moodOrdinary != null
+        ? `In the ten minutes after, his mood ${moved(n.moodAfterContact)}; over an ordinary ten minutes it ${moved(n.moodOrdinary)}.`
+        : "We need a few more of those to see what they do to his mood.") +
+      (n.companyNeed != null ? ` His need for company averaged ${Math.round(n.companyNeed * 100)} out of 100.` : "");
   }
   const b = o.body;
   if (!b || b.tiredMoments < 5) return "Not enough of his tired moments seen yet.";
@@ -182,11 +236,29 @@ function testItem(test, data) {
 </li>`;
 }
 
+// What each test is about, in a line, for a star with nothing seen yet.
+const ABOUT = {
+  edges: "Whether his town has an edge. He means to walk east until he can’t go on.",
+  time: "Whether his hours run like ours. He means to count the street clock through a night.",
+  shops: "Whether shops only work in their hours. He means to ring the takeaway bell when it’s shut.",
+  money: "Whether money only comes from his prints. He means to buy a pastry and sweep for a penny.",
+  sky: "Whether his sky is fixed. He means to watch a star against the moon over several days.",
+};
+const clip = (t, n) => (t.length > n ? t.slice(0, n - 1).replace(/\s+\S*$/, "") + "…" : t);
+
+// The star's tooltip: what the test is about, or a line on the latest sighting.
+function tip(t) {
+  const s = t.sightings?.[0];
+  if (!s) return ABOUT[t.key] ?? "";
+  return `${s.glimmer ? "Latest glimmer" : "Latest sighting"}: ${s.reason ? s.reason : `“${clip(s.text, 110)}”`}`;
+}
+
 function marks(data) {
   return data.tests
     .map((t) => {
       const [x, y] = STAR_POSITIONS[t.key];
-      return `<a class="mark" href="#${t.key}" style="left:${x}%;top:${y}%"><span>${esc(t.name)}</span><small>${seenText(t.seen, t.glimmers)}</small></a>`;
+      const side = x < 25 ? " tip-left" : x > 75 ? " tip-right" : "";
+      return `<a class="mark${side}" href="#${t.key}" style="left:${x}%;top:${y}%"><span>${esc(t.name)}</span><small>${seenText(t.seen, t.glimmers)}</small><em class="tip">${esc(tip(t))}</em></a>`;
     })
     .join("");
 }
@@ -317,6 +389,10 @@ h1{font:500 clamp(30px,5.4vw,52px)/1.05 var(--text);letter-spacing:-.015em;margi
 .mark span{font-weight:600;font-size:14px}
 .mark small{font-size:12px;color:var(--ash)}
 .mark:hover span{color:var(--lamp)}
+.mark .tip{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);width:max-content;max-width:min(240px,70vw);white-space:normal;text-align:left;font-style:normal;font-size:13px;line-height:1.45;color:var(--ivory);background:rgba(13,10,8,.9);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;opacity:0;pointer-events:none;transition:opacity .2s ease}
+.mark.tip-left .tip{left:0;transform:none}
+.mark.tip-right .tip{left:auto;right:0;transform:none}
+.mark:hover .tip,.mark:focus-visible .tip{opacity:1}
 .roost-label{position:absolute;z-index:3;transform:translate(-50%,-100%);display:grid;justify-items:center;gap:1px;text-align:center;line-height:1.25;white-space:nowrap;padding:2px 6px;pointer-events:none}
 .roost-label b{font-weight:600;font-size:13px}
 .roost-label span{font-size:12px;color:var(--ash)}
@@ -467,11 +543,13 @@ ol.ours-tests p{margin:4px 0 0;color:#cfc7bd;font-size:15px}
 footer{max-width:980px;margin:72px auto 0;padding-block:32px 56px;border-top:1px solid var(--rule);color:var(--ash);font-size:14px;line-height:1.55;display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:40px}
 .foot-col{display:grid;gap:10px;align-content:start;min-width:0}
 .foot-head{font-size:12px;letter-spacing:.04em;color:var(--lamp)}
-.our-tests{max-width:980px;margin:72px auto 0}
-.ours-inner{display:grid;gap:14px}
-.ours-intro{margin:0;color:#cfc7bd;max-width:62ch}
-ul.ours-cards{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
-.ourtest{display:grid;gap:12px;align-content:start;padding:22px 22px 24px;border:1px solid var(--rule);border-radius:14px;background:linear-gradient(#15110e,#120e0b)}
+.our-tests{--edge:max(20px,calc((100% - 940px) / 2));margin:72px 0 0;padding-left:0!important;padding-right:0!important}
+.ours-inner{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+.ours-inner>h2,.ours-intro,.ours-basis{padding-inline:var(--edge)}
+.ours-intro{margin:0;color:#cfc7bd;max-width:calc(62ch + 2 * var(--edge))}
+ul.ours-cards{list-style:none;margin:14px 0 0;padding:4px var(--edge) 8px;display:flex;gap:24px;align-items:stretch;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-inline:var(--edge);scrollbar-width:none}
+.ourtest{flex:0 0 min(330px,82vw);scroll-snap-align:start;display:flex;flex-direction:column;gap:12px;padding:22px 22px 24px;border:1px solid var(--rule);border-radius:14px;background:linear-gradient(#15110e,#120e0b)}
+.ourtest .seen-so-far{margin-top:auto;padding-top:6px}
 .ourtest .test-icon{color:var(--lamp)}
 .ourtest .test-name{font-weight:600;font-size:15px}
 .ourtest .plan{color:#cfc7bd}
@@ -495,7 +573,7 @@ footer a{text-underline-offset:3px}
   .mark span{font-size:13px}.mark small{display:none}
 }
 @media (max-width:760px){
-  footer,ul.ours-cards{grid-template-columns:1fr;gap:28px}
+  footer{grid-template-columns:1fr;gap:28px}
   .ground-inner{grid-template-columns:1fr}
   .clocks{grid-template-columns:1fr 1fr;gap:20px}
 }
