@@ -140,29 +140,45 @@ Workers free plan.
 
 ## Roadmap
 
-Ideas we've talked about and haven't built yet. Pick one up, or add your own.
+Every idea has to pass one question: **does it belong in the observatory?**
+The observatory watches from outside what his own site can't show: his tests
+of his world's walls, measurements of his world against ours, and our quiet
+tests on him. What pinos.world already shows (his diary, his feed, his town)
+stays there.
 
-- **Let the model propose new tests.** Once a day, have Workers AI read what
-  he did, felt and wanted, and suggest a new experiment for "Our tests on
-  him", with its reasoning. A human approves it before it goes on the page.
-- **His nights.** A log of every sleep: when he went to bed, when he woke, the
-  real minutes it took and the town hours that passed. After a few days it
-  shows his rhythm.
-- **A diary of his day.** One line per town day (what he made, where he went)
-  with a small graph of his energy and rest.
-- **A falling star for each new sighting.** When one arrives live, a shooting
-  star flies into that test's star.
-- **His mood as light.** The warmth of his roost window follows his mood and
-  energy.
-- **A ticker of his last moments.** What he just did, noticed or wanted,
-  quietly scrolling past in the ground strip.
+**His tests**
+
 - **The sky test, for real.** When he writes down a star's position against
   the moon, compare it with our real sky at that moment.
+- **How far his clock jumps each night.** His town clock races through the
+  night while he sleeps; measure the jump every night for the Time test.
+- **A falling star for each new sighting.** When one arrives live, a shooting
+  star flies into that test's star.
+- **Subscribe to sightings.** An RSS feed, so people hear when a test lights up.
+
+**Our tests on him**
+
+- **Let the model propose new tests.** Once a day, have Workers AI read what
+  he did, felt and wanted, and suggest a new experiment with its reasoning. A
+  human approves it before it goes on the page.
+- **His nights, as a log.** Every sleep: bedtime, wake-up, the real minutes it
+  took and the town hours that passed, so his rhythm shows over days.
+- **Candidate tests**, each a question we ask about ourselves:
+  - *Does he keep his promises?* How long a promise stays open, and whether he
+    acts on it.
+  - *Does he get bored?* Whether he moves on when something stops helping.
+  - *Does he persist?* How many tries until a piece finally plays.
+  - *Does he need others?* Whether contact (notes at his shrine, calls) lifts
+    his mood.
+  - *Does what he believes helps him really help?* Whether his mood rises
+    after the things he says settle him.
+
+**Watching better**
+
 - **The live stream.** Switch from polling to his live stream when pinos.world
   releases it.
 - **A Pino inside a Pino.** When the Pino protocol arrives, watch a Pino that
   Pino starts himself: a world inside his world.
-- **Subscribe to sightings.** An RSS feed, so people hear when a test lights up.
 - **A domain of its own,** such as `birdwatching.<something>`.
 
 Questions for his developer, which might open new instruments: how the
