@@ -1022,19 +1022,30 @@ ${ourTests(data)}
   }
   // Tiny Pino likes a hand lying near horizontal (within 50 degrees of three or
   // nine o'clock); steeper, up or down, is too exciting. He prefers the second
-  // hand, which races round about every 13 seconds: when it gets steep he jumps
-  // to the minute or hour hand (at random if both are comfortable) and hops back
-  // as soon as it comes round. With no comfortable hand he waits on the pin.
+  // hand, which races round: when it gets steep he moves to the minute or hour
+  // hand (at random if both are comfortable) and back as soon as it comes round.
+  // He sees it coming: a couple of seconds before, he waddles in along his hand
+  // towards the centre, glides across to the other hand there, and waddles out
+  // again. With no comfortable hand he waits on the pin; asleep too.
   const tiny = document.getElementById("tiny-pino");
   const HANDS = { s: 48, m: 44, h: 28 };
-  let perch = "pin", hop = null, shown = null;
-  const tip = (deg, len) => [Math.sin((deg * Math.PI) / 180) * len, -Math.cos((deg * Math.PI) / 180) * len];
+  const SIZE = 1.25, INNER = 11, LEAD_S = 2.2, OUT_MS = 1400, CROSS_MS = 650;
+  let perch = "pin", cross = null, shown = null, landedAt = 0;
+  const at = (deg, r) => [Math.sin((deg * Math.PI) / 180) * r, -Math.cos((deg * Math.PI) / 180) * r];
   const comfy = (deg) => { const d = ((deg % 360) + 360) % 360; return Math.abs(d - 90) <= 50 || Math.abs(d - 270) <= 50; };
-  const SIZE = 1.25;
+  const smooth = (k) => k * k * (3 - 2 * k);
   function placeTiny(mins) {
     if (!tiny) return;
+    const now = performance.now();
     const deg = { s: ((mins * 60) % 60) * 6, m: (mins % 60) * 6, h: ((mins / 60) % 12) * 30 };
-    const spot = (p) => (p === "pin" ? [0, -2.6] : tip(deg[p], HANDS[p] - 4));
+    // Degrees per real second for each hand, at his clock's measured speed.
+    const speed = D.rate ? { s: 6 * D.rate, m: 0.1 * D.rate, h: D.rate / 120 } : { s: 0, m: 0, h: 0 };
+    const within = (p, test) => {
+      if (!speed[p]) return Infinity;
+      for (let t = 0.05; t <= LEAD_S; t += 0.05) if (test(deg[p] + speed[p] * t)) return t;
+      return Infinity;
+    };
+
     let want = perch;
     if (D.asleep || still) want = "pin";
     else if (D.rate && comfy(deg.s)) want = "s";
@@ -1042,18 +1053,48 @@ ${ourTests(data)}
       const options = ["m", "h"].filter((p) => comfy(deg[p]));
       want = options.length ? options[Math.floor(Math.random() * options.length)] : "pin";
     }
-    const now = performance.now();
-    if (want !== perch && !hop) { hop = { from: shown ?? spot(perch), start: now }; perch = want; }
-    let [x, y] = spot(perch);
-    if (hop) {
-      const k = Math.min(1, (now - hop.start) / 450), e = k * k * (3 - 2 * k);
-      x = hop.from[0] + (x - hop.from[0]) * e;
-      y = hop.from[1] + (y - hop.from[1]) * e - Math.sin(k * Math.PI) * 9;
-      if (k === 1) hop = null;
+
+    // How soon he'll have to move: his hand getting steep, or the second hand
+    // coming round while he waits on another.
+    let soon = Infinity;
+    if (perch === "s") soon = within("s", (d) => !comfy(d));
+    else if (perch !== "pin") soon = Math.min(D.rate ? within("s", comfy) : Infinity, within(perch, (d) => !comfy(d)));
+
+    // Where along his hand he stands: out at the tip, in towards the centre before a move.
+    const reach = (p) => {
+      if (p === "pin") return 0;
+      const tipR = HANDS[p] - 4;
+      let r = INNER + (tipR - INNER) * smooth(Math.min(1, Math.max(0, now - landedAt) / OUT_MS));
+      if (p === perch && soon < LEAD_S) r = Math.min(r, tipR - (tipR - INNER) * smooth(1 - soon / LEAD_S));
+      return r;
+    };
+    const spot = (p, r) => (p === "pin" ? [0, -2.6] : at(deg[p], r));
+
+    if (want !== perch && !cross) {
+      cross = { from: shown ?? spot(perch, reach(perch)), start: now };
+      perch = want;
+      landedAt = now + CROSS_MS;
     }
+    let [x, y] = spot(perch, cross ? (perch === "pin" ? 0 : INNER) : reach(perch));
+    let walking = false;
+    if (cross) {
+      const k = Math.min(1, (now - cross.start) / CROSS_MS), e = smooth(k);
+      x = cross.from[0] + (x - cross.from[0]) * e;
+      y = cross.from[1] + (y - cross.from[1]) * e - Math.sin(k * Math.PI) * 2.5;
+      walking = true;
+      if (k === 1) cross = null;
+    } else if (perch !== "pin") {
+      walking = now - landedAt < OUT_MS || soon < LEAD_S;
+    }
+    // Face the way he's going: in towards the centre before a move, otherwise out.
+    const inward = !cross && perch !== "pin" && soon < LEAD_S;
+    let facing = x >= 0 ? 1 : -1;
+    if (inward) facing = -facing;
+    if (shown && cross) facing = x >= shown[0] ? 1 : -1;
     shown = [x, y];
-    const facing = perch === "pin" ? 1 : (x >= 0 ? 1 : -1);
-    tiny.setAttribute("transform", "translate(" + x.toFixed(2) + " " + (y - 4.4 * SIZE).toFixed(2) + ") scale(" + facing * SIZE + " " + SIZE + ")");
+    // The waddle: rocking from foot to foot about his feet while he walks.
+    const waddle = walking ? Math.sin(now / 85) * 9 : 0;
+    tiny.setAttribute("transform", "translate(" + x.toFixed(2) + " " + y.toFixed(2) + ") rotate(" + waddle.toFixed(1) + ") translate(0 " + (-4.4 * SIZE).toFixed(2) + ") scale(" + facing * SIZE + " " + SIZE + ")");
   }
 
   const ourDate = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", day: "numeric", month: "long", year: "numeric" });
