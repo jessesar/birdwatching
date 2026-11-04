@@ -21,9 +21,10 @@
   // they touch. About a fifth of the free daily Workers AI allowance.
   "ai": { "binding": "AI" },
 
-  // How often the heavy calculations run, in minutes. On the Workers free plan
-  // 10 and 30 keep database reads comfortable; on the paid plan set both to 1.
-  "vars": { "DERIVE_EVERY_MIN": "10", "FEED_TESTS_EVERY_MIN": "30" },
+  // On the Workers paid plan: the heavy calculations every minute, and his status
+  // every 15 seconds (as often as his API updates). On the free plan use 10, 30
+  // and 60 to keep database reads and requests comfortable.
+  "vars": { "DERIVE_EVERY_MIN": "1", "FEED_TESTS_EVERY_MIN": "1", "STATUS_EVERY_S": "15" },
 
   // The favicon and the social preview image; everything else is the Worker.
   "assets": { "directory": "./public" },

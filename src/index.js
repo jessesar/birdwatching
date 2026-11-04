@@ -38,7 +38,8 @@ const setMeta = (env, key, value) =>
   env.DB.prepare("INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value")
     .bind(key, JSON.stringify(value));
 
-export async function collect(env, when = Date.now()) {
+// feed: also read his feed. extras: also his memories and wants (on the minute).
+export async function collect(env, when = Date.now(), { feed: withFeed = true, extras = true } = {}) {
   const seenAt = new Date(when).toISOString();
   const now = await ask("/now");
   if (!now) {
@@ -64,7 +65,7 @@ export async function collect(env, when = Date.now()) {
   }
 
   // The clock reading above is kept even if the feed or memories fail.
-  try {
+  if (withFeed) try {
     const feed = await ask("/feed?limit=50");
     for (const e of feed?.entries ?? []) {
       writes.push(
@@ -78,7 +79,7 @@ export async function collect(env, when = Date.now()) {
   }
 
   // Memories only change every five minutes; asking every ten is plenty.
-  if (new Date(when).getUTCMinutes() % 10 === 0) {
+  if (extras && new Date(when).getUTCMinutes() % 10 === 0) {
     try {
       const memories = await ask("/memories");
       for (const m of ["beliefs", "long", "short"].flatMap((k) => memories?.[k] ?? [])) {
@@ -94,7 +95,7 @@ export async function collect(env, when = Date.now()) {
 
   // His loudest wants change slowly; every five minutes catches a plan
   // before he acts on it. A want is stored once, when first seen.
-  if (new Date(when).getUTCMinutes() % 5 === 0) {
+  if (extras && new Date(when).getUTCMinutes() % 5 === 0) {
     try {
       const mind = await ask("/mind");
       for (const w of mind?.loudest ?? []) {
@@ -277,15 +278,16 @@ export async function observations(env, at = Date.now(), derived = null) {
 // The page's data is built once a minute by the cron and stored as a single row,
 // so a visit costs one read however many people are watching. Each Worker
 // instance also keeps it for a few seconds.
-const SNAPSHOT_TTL_MS = 15 * 1000;
+const SNAPSHOT_TTL_MS = 5 * 1000;
 let cached = null;
 
-export async function snapshot(env, when = Date.now()) {
+// heavy: allowed to recalculate the clock speed and our tests (once a minute at most).
+export async function snapshot(env, when = Date.now(), { heavy = true } = {}) {
   const minute = Math.floor(when / 60000);
   const stored = await readMeta(env, "derived");
   let derived = stored;
-  if (!stored || minute % every(env, "DERIVE_EVERY_MIN", 10) === 0) derived = { ...stored, ...(await derive(env, when)) };
-  if (!derived.feed || minute % every(env, "FEED_TESTS_EVERY_MIN", 30) === 0) derived = { ...derived, feed: await deriveFeed(env, when) };
+  if (!stored || (heavy && minute % every(env, "DERIVE_EVERY_MIN", 10) === 0)) derived = { ...stored, ...(await derive(env, when)) };
+  if (!derived.feed || (heavy && minute % every(env, "FEED_TESTS_EVERY_MIN", 30) === 0)) derived = { ...derived, feed: await deriveFeed(env, when) };
   if (derived !== stored) await setMeta(env, "derived", derived).run();
   await setMeta(env, "snapshot", await observations(env, when, derived)).run();
 }
@@ -312,6 +314,9 @@ export async function health(env, at = Date.now()) {
 export default {
   async scheduled(controller, env, ctx) {
     const when = controller.scheduledTime;
+    // His status updates every 15 seconds; STATUS_EVERY_S lets the minute's run
+    // read it that often (his feed every 30 seconds), never faster than he updates.
+    const step = Math.min(60, Math.max(15, Number(env.STATUS_EVERY_S) || 60));
     ctx.waitUntil(
       (async () => {
         try {
@@ -320,6 +325,17 @@ export default {
         } finally {
           // Even after a failed run, refresh what visitors see.
           await snapshot(env, when);
+        }
+        for (let s = step; s < 60; s += step) {
+          await new Promise((r) => setTimeout(r, Math.max(0, when + s * 1000 - Date.now())));
+          const at = when + s * 1000;
+          try {
+            await collect(env, at, { feed: s % 30 === 0, extras: false });
+          } catch (err) {
+            console.error("quick collect failed", err);
+          } finally {
+            await snapshot(env, at, { heavy: false });
+          }
         }
       })().catch((err) => console.error("collect failed", err))
     );

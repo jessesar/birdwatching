@@ -258,7 +258,8 @@ function marks(data) {
     .map((t) => {
       const [x, y] = STAR_POSITIONS[t.key];
       const side = x < 25 ? " tip-left" : x > 75 ? " tip-right" : "";
-      return `<a class="mark${side}" href="#${t.key}" style="left:${x}%;top:${y}%"><span>${esc(t.name)}</span><small>${seenText(t.seen, t.glimmers)}</small><em class="tip">${esc(tip(t))}</em></a>`;
+      const at = t.sightings?.[0]?.at;
+      return `<a class="mark${side}" href="#${t.key}" style="left:${x}%;top:${y}%"><span>${esc(t.name)}</span><small>${seenText(t.seen, t.glimmers)}</small><em class="tip">${at ? `<b class="tip-when" data-at="${esc(at)}">${utc(at)}</b>` : ""}${esc(tip(t))}</em></a>`;
     })
     .join("");
 }
@@ -390,6 +391,7 @@ h1{font:500 clamp(30px,5.4vw,52px)/1.05 var(--text);letter-spacing:-.015em;margi
 .mark small{font-size:12px;color:var(--ash)}
 .mark:hover span{color:var(--lamp)}
 .mark .tip{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);width:max-content;max-width:min(240px,70vw);white-space:normal;text-align:left;font-style:normal;font-size:13px;line-height:1.45;color:var(--ivory);background:rgba(13,10,8,.9);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;opacity:0;pointer-events:none;transition:opacity .2s ease}
+.mark .tip-when{display:block;color:var(--lamp);font-weight:500;font-size:12px;margin-bottom:3px}
 .mark.tip-left .tip{left:0;transform:none}
 .mark.tip-right .tip{left:auto;right:0;transform:none}
 .mark:hover .tip,.mark:focus-visible .tip{opacity:1}
@@ -1146,8 +1148,19 @@ ${ourTests(data)}
     });
     if (more) notice.hidden = false;
   }
+  // Sightings say how long ago they happened, kept current while the page is open.
+  function ago(iso) {
+    const s = Math.max(0, (Date.now() - Date.parse(iso)) / 1000);
+    if (s < 90) return "just now";
+    const m = Math.round(s / 60); if (m < 60) return m + " minutes ago";
+    const h = Math.round(m / 60); if (h < 36) return h === 1 ? "an hour ago" : h + " hours ago";
+    const d = Math.round(h / 24); return d === 1 ? "a day ago" : d + " days ago";
+  }
+  function stamp() { document.querySelectorAll(".tip-when[data-at]").forEach((el) => { const t = ago(el.dataset.at); if (el.textContent !== t) el.textContent = t; }); }
+  stamp(); setInterval(stamp, 15 * 1000);
+
   // Only while the tab is visible; coming back to it refreshes right away.
-  setInterval(() => { if (!document.hidden) refresh(); }, 60 * 1000);
+  setInterval(() => { if (!document.hidden) refresh(); }, 15 * 1000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
 })();
 </script>

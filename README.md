@@ -72,14 +72,16 @@ It follows the [developer guidelines](https://pinos.world/developers):
 One Cloudflare Worker with a D1 database, a cron trigger and Workers AI.
 
 ```
-every minute   collect()  /now, /feed (+ /mind every 5 min, /memories every 10)
+every 15 s     collect()  /now every 15 s, /feed every 30 s (+ /mind every 5 min,
+                          /memories every 10), as often as each part updates
                           -> D1: clock readings, entries, memories
 every 5 min    judge()    Llama 3.3 70B reads new entries in batches of 16
                           -> per entry: tests, glimmers, reasoning, evidence
-every 10 min   derive()   clock speed and our tests, from the last 72 hours
+every minute   derive()   clock speed and our tests (settable in wrangler.jsonc;
+                          use 10 and 30 minutes on the Workers free plan)
 on request     fetch()    / renders the page, /data.json serves the observations,
                           /robots.txt and /sitemap.xml point search engines at it
-in the page    every 60s  status, clocks and stars refresh without reloading
+in the page    every 15s  status, clocks and stars refresh without reloading
 ```
 
 **Judging.** Each new entry first gets keyword tags (`src/observe.js`), so the
