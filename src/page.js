@@ -1018,18 +1018,19 @@ ${ourTests(data)}
     if (label.textContent !== text) label.textContent = text;
     if (below.textContent !== second) below.textContent = second;
   }
-  // Tiny Pino perches on the tip of a hand of his town clock. When his hand tips
-  // down far enough that he'd slide off, he hops to the other hand; if both
-  // point down he waits on the pin. Asleep, he sits on the pin.
+  // Tiny Pino perches on the tip of a hand of his town clock. Only when his hand
+  // points nearly straight down (within 45 degrees of six o'clock) does he hop
+  // to the other hand; if both point down he waits on the pin. Asleep, he sits on the pin.
   const tiny = document.getElementById("tiny-pino");
   const HANDS = { m: 44, h: 28 };
   let perch = "m", hop = null, shown = null;
   const tip = (deg, len) => [Math.sin((deg * Math.PI) / 180) * len, -Math.cos((deg * Math.PI) / 180) * len];
-  const upright = (deg) => { const d = ((deg % 360) + 360) % 360; return d < 100 || d > 260; };
+  const upright = (deg) => { const d = ((deg % 360) + 360) % 360; return d < 135 || d > 225; };
+  const SIZE = 1.7;
   function placeTiny(mins) {
     if (!tiny) return;
     const deg = { m: (mins % 60) * 6, h: ((mins / 60) % 12) * 30 };
-    const spot = (p) => (p === "pin" ? [0, -2.6] : tip(deg[p], HANDS[p] - 2));
+    const spot = (p) => (p === "pin" ? [0, -2.6] : tip(deg[p], HANDS[p] - 4));
     let want = perch;
     if (D.asleep || still) want = "pin";
     else if (perch === "pin" || !upright(deg[perch])) want = upright(deg.m) ? "m" : upright(deg.h) ? "h" : "pin";
@@ -1044,7 +1045,7 @@ ${ourTests(data)}
     }
     shown = [x, y];
     const facing = perch === "pin" ? 1 : (x >= 0 ? 1 : -1);
-    tiny.setAttribute("transform", "translate(" + x.toFixed(2) + " " + (y - 3.6).toFixed(2) + ") scale(" + facing + " 1)");
+    tiny.setAttribute("transform", "translate(" + x.toFixed(2) + " " + (y - 3.6 * SIZE).toFixed(2) + ") scale(" + facing * SIZE + " " + SIZE + ")");
   }
 
   const ourDate = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", day: "numeric", month: "long", year: "numeric" });
