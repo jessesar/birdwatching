@@ -1,0 +1,25 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "birdwatching",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-15",
+
+  // Pino's feed only holds about ten minutes, so read it every minute.
+  // That is still slower than his feed updates (every 30 seconds).
+  "triggers": { "crons": ["* * * * *"] },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "pino-observatory",
+      "database_id": "13637c0f-53dc-4c8c-8fbb-825899d85f39",
+      "migrations_dir": "./migrations"
+    }
+  ],
+
+  // A small model reads his entries every five minutes to judge which test
+  // they touch. About a fifth of the free daily Workers AI allowance.
+  "ai": { "binding": "AI" },
+
+  "observability": { "enabled": true }
+}

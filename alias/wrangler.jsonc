@@ -1,0 +1,9 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "pino-observatory",
+  "main": "index.js",
+  "compatibility_date": "2026-10-15",
+  // This address only forwards; the birdwatching Worker does the polling.
+  "triggers": { "crons": [] },
+  "services": [{ "binding": "BIRDWATCHING", "service": "birdwatching" }]
+}
