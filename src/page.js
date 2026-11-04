@@ -1024,13 +1024,16 @@ ${ourTests(data)}
   // nine o'clock); steeper, up or down, is too exciting. He prefers the second
   // hand, which races round: when it gets steep he moves to the minute or hour
   // hand (at random if both are comfortable) and back as soon as it comes round.
-  // He sees it coming: a couple of seconds before, he waddles in along his hand
-  // towards the centre, glides across to the other hand there, and waddles out
-  // again. With no comfortable hand he waits on the pin; asleep too.
+  // He sees it coming: a second before, he waddles in along his hand towards the
+  // centre, glides across to the other hand there, and waddles out again; in
+  // between he stands still. He doesn't rejoin the second hand every round: when
+  // it swings away he decides whether to go back next time. With no comfortable
+  // hand he waits on the pin; asleep too.
   const tiny = document.getElementById("tiny-pino");
   const HANDS = { s: 48, m: 44, h: 28 };
-  const SIZE = 1.25, INNER = 11, LEAD_S = 2.2, OUT_MS = 1400, CROSS_MS = 650;
+  const SIZE = 1.25, INNER = 11, LEAD_S = 1.1, OUT_MS = 900, CROSS_MS = 650;
   let perch = "pin", cross = null, shown = null, landedAt = 0;
+  let secondWasComfy = false, rejoinSecond = true;
   const at = (deg, r) => [Math.sin((deg * Math.PI) / 180) * r, -Math.cos((deg * Math.PI) / 180) * r];
   const comfy = (deg) => { const d = ((deg % 360) + 360) % 360; return Math.abs(d - 90) <= 50 || Math.abs(d - 270) <= 50; };
   const smooth = (k) => k * k * (3 - 2 * k);
@@ -1046,9 +1049,14 @@ ${ourTests(data)}
       return Infinity;
     };
 
+    // When the second hand swings away, decide whether to rejoin it next round.
+    const secondComfy = Boolean(D.rate) && comfy(deg.s);
+    if (secondWasComfy && !secondComfy) rejoinSecond = Math.random() < 0.5;
+    secondWasComfy = secondComfy;
+
     let want = perch;
     if (D.asleep || still) want = "pin";
-    else if (D.rate && comfy(deg.s)) want = "s";
+    else if (secondComfy && (perch === "s" || perch === "pin" || rejoinSecond)) want = "s";
     else if (perch === "pin" || perch === "s" || !comfy(deg[perch])) {
       const options = ["m", "h"].filter((p) => comfy(deg[p]));
       want = options.length ? options[Math.floor(Math.random() * options.length)] : "pin";
@@ -1058,7 +1066,7 @@ ${ourTests(data)}
     // coming round while he waits on another.
     let soon = Infinity;
     if (perch === "s") soon = within("s", (d) => !comfy(d));
-    else if (perch !== "pin") soon = Math.min(D.rate ? within("s", comfy) : Infinity, within(perch, (d) => !comfy(d)));
+    else if (perch !== "pin") soon = Math.min(D.rate && rejoinSecond ? within("s", comfy) : Infinity, within(perch, (d) => !comfy(d)));
 
     // Where along his hand he stands: out at the tip, in towards the centre before a move.
     const reach = (p) => {
