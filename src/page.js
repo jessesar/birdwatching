@@ -301,7 +301,7 @@ const dial = (id, label) => `<figure class="dial">
     <line id="${id}-m" class="hand minute" x1="0" y1="8" x2="0" y2="-44"/>
     <line id="${id}-s" class="hand second" x1="0" y1="12" x2="0" y2="-48"/>
     <circle r="2.6" class="pin"/>${id === "tc" ? `
-    <g id="tiny-pino" class="tiny-pino" aria-hidden="true"><path class="body" d="M2.4-4.4C.6-4.8-1.6-3.6-3-1.6-4.3.3-3.8 2.1-2.1 2.6-.2 3.1 1.8 2.3 2.8.6 3.8-1.1 3.9-3.9 2.4-4.4z"/><path class="line" d="M3.4-2.9 8.6-1.3 M-.3 2.8.2 3.7-.4 4.4M1.2 2.6 1.9 3.5 1.6 4.4M-.9 4.4h.9M1.2 4.4h.9"/><circle cx="2.2" cy="-3.1" r=".75" class="eye-white"/><circle cx="2.35" cy="-3.1" r=".35" class="eye"/></g>` : ""}
+    <g id="tiny-pino" class="tiny-pino" aria-hidden="true"><path id="tiny-legs" class="line" d="M-.3 2.8.2 3.7-.4 4.4M1.2 2.6 1.9 3.5 1.6 4.4M-.9 4.4h.9M1.2 4.4h.9"/><g id="tiny-upper"><path class="body" d="M2.4-4.4C.6-4.8-1.6-3.6-3-1.6-4.3.3-3.8 2.1-2.1 2.6-.2 3.1 1.8 2.3 2.8.6 3.8-1.1 3.9-3.9 2.4-4.4z"/><path class="line" d="M3.4-2.9 8.6-1.3"/><circle cx="2.2" cy="-3.1" r=".75" class="eye-white"/><circle cx="2.35" cy="-3.1" r=".35" class="eye"/></g></g>` : ""}
   </svg>
   <figcaption id="${id}-cap"><span>${label}</span><b id="${id}-t">--:--</b><small id="${id}-d"></small></figcaption>
 </figure>`;
@@ -1033,7 +1033,8 @@ ${ourTests(data)}
   const tiny = document.getElementById("tiny-pino");
   const HANDS = { s: 48, m: 44, h: 28 };
   const SIZE = 1.25, WALK = 26, GLIDE = 52, LOOKAHEAD_S = 2.5;
-  let perch = "pin", r = 0, lastT = 0, facing = 1;
+  let perch = "pin", r = 0, lastT = 0, facing = 1, stillSince = 0, sit = 0;
+  const tinyUpper = document.getElementById("tiny-upper"), tinyLegs = document.getElementById("tiny-legs");
   let secondWasComfy = false, rejoinSecond = true;
   const at = (deg, rr) => [Math.sin((deg * Math.PI) / 180) * rr, -Math.cos((deg * Math.PI) / 180) * rr];
   const comfy = (deg) => { const d = ((deg % 360) + 360) % 360; return Math.abs(d - 90) <= 50 || Math.abs(d - 270) <= 50; };
@@ -1077,7 +1078,9 @@ ${ourTests(data)}
     // Downhill if moving along his hand takes him lower on the screen.
     const handUp = perch === "pin" ? 0 : -Math.cos((deg[perch] * Math.PI) / 180);
     const downhill = perch !== "pin" && Math.sign(target - r) * handUp > 0.05;
-    const before = r, step = (downhill ? GLIDE : WALK) * dt;
+    // If he's sitting, he gets up before he moves.
+    const needMove = Math.abs(target - r) > 0.01 || want !== perch;
+    const before = r, step = needMove && sit > 0.05 ? 0 : (downhill ? GLIDE : WALK) * dt;
     r += Math.max(-step, Math.min(step, target - r));
     if (want !== perch && r <= 0.01) { perch = want; r = 0; }
     const walking = Math.abs(r - before) > 1e-3;
@@ -1091,6 +1094,14 @@ ${ourTests(data)}
       const out = Math.sin((deg[perch] * Math.PI) / 180) >= 0 ? 1 : -1;
       facing = r > before ? out : -out;
     }
+    // Standing still for a moment, he sits down: body lowered onto the hand,
+    // legs tucked away. He gets up again before he moves.
+    if (needMove) stillSince = now;
+    const sitting = now - stillSince > 1400;
+    sit += Math.max(-dt / 0.25, Math.min(dt / 0.35, (sitting ? 1 : 0) - sit));
+    if (tinyUpper) tinyUpper.setAttribute("transform", "translate(0 " + (2.2 * sit).toFixed(2) + ")");
+    if (tinyLegs) tinyLegs.style.opacity = String(1 - sit);
+
     // The waddle: rocking from foot to foot about his feet while he walks; a
     // forward lean while he glides.
     const waddle = gliding ? 12 * facing : walking ? Math.sin(now / 85) * 9 : 0;
