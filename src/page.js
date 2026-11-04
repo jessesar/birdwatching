@@ -875,11 +875,19 @@ ${beacon}
     }
     // A big head, a little wider than tall, with full cheeks.
     blob(0, -40.5, 10.3, 9.8); blob(-4.2, -35.5, 6, 4.6); blob(4.2, -35.5, 6, 4.6);
-    // A very simple face, drawn faintly: big eyes, a little lidded, with slit pupils, a small
+    // A very simple face, drawn faintly: big pale eyes, a little lidded, with dark slit pupils, a small
     // nose and a small mouth.
     ctx.strokeStyle = ctx.fillStyle = "rgba(230,223,212,0.32)"; ctx.lineWidth = 0.55;
+    // Pale eyes with dark slit pupils.
     ctx.beginPath();
-    for (const ex of [-3.7, 3.7]) { ctx.moveTo(ex + 2.6, -39.75); ctx.ellipse(ex, -39.75, 2.6, 2.2, 0, 0, 6.283); ctx.moveTo(ex, -41.1); ctx.lineTo(ex, -38.4); }
+    for (const ex of [-3.7, 3.7]) { ctx.moveTo(ex + 2.6, -39.75); ctx.ellipse(ex, -39.75, 2.6, 2.2, 0, 0, 6.283); }
+    ctx.fill();
+    ctx.strokeStyle = "#0d0a08"; ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    for (const ex of [-3.7, 3.7]) { ctx.moveTo(ex, -41.2); ctx.lineTo(ex, -38.3); }
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(230,223,212,0.32)"; ctx.lineWidth = 0.55;
+    ctx.beginPath();
     ctx.moveTo(-1.4, -34.6); ctx.quadraticCurveTo(-0.7, -33.6, 0, -34.4); ctx.quadraticCurveTo(0.7, -33.6, 1.4, -34.6);
     ctx.stroke();
     ctx.beginPath(); ctx.moveTo(-0.8, -36.4); ctx.lineTo(0.8, -36.4); ctx.lineTo(0, -35.4); ctx.closePath(); ctx.fill();
