@@ -256,17 +256,18 @@ main{max-width:980px;margin:0 auto}
 .now .doing{display:block;font-size:22px;line-height:1.3;font-weight:500;color:var(--ivory);margin-top:4px}
 .now .doing::first-letter{text-transform:uppercase}
 .now .thought{display:block;margin-top:12px;font-size:16px;line-height:1.55;font-style:italic;color:#cfc7bd}
-.now .thought>span{font-style:normal;font-size:12px;letter-spacing:.04em;color:var(--lamp);margin-right:4px}
+.now .thought>span{display:block;font-style:normal;font-size:12px;letter-spacing:.04em;color:var(--lamp);margin-bottom:3px}
 .ground .note{margin:18px 0 0;color:var(--ash);font-size:14px;max-width:372px}
 .ground-inner{align-items:start}
 .feel{margin-top:22px;display:grid;gap:10px;max-width:46ch}
 .feeling{margin:0;font-size:15px;line-height:1.5;color:#cfc7bd}
-.feeling>span{font-size:12px;letter-spacing:.04em;color:var(--lamp);margin-right:4px}
-.needs-title{margin:6px 0 0;font-size:12px;letter-spacing:.04em;color:var(--lamp)}
-ul.needs{list-style:none;margin:0;padding:0;display:flex;flex-wrap:nowrap;gap:16px}
-ul.needs li{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ash);white-space:nowrap}
-ul.needs i{display:block;width:30px;height:3px;border-radius:2px;background:rgba(243,239,233,.12);overflow:hidden}
-ul.needs b{display:block;height:100%;border-radius:2px;background:linear-gradient(90deg,rgba(242,196,109,.55),var(--lamp));transition:width 1.2s ease}
+.feeling>span{display:block;font-size:12px;letter-spacing:.04em;color:var(--lamp);margin-bottom:3px}
+.needs-title{margin:8px 0 0;font-size:12px;letter-spacing:.04em;color:var(--lamp)}
+ul.needs{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-wrap:nowrap;gap:20px}
+ul.needs li{display:flex;flex-direction:column;align-items:flex-start;gap:7px;font-size:12px;color:var(--ash);white-space:nowrap}
+ul.needs li i{order:-1}
+ul.needs i{display:block;width:58px;height:6px;border-radius:3px;background:rgba(243,239,233,.12);overflow:hidden}
+ul.needs b{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,rgba(242,196,109,.55),var(--lamp));transition:width 1.2s ease}
 .when{display:block;color:var(--ash);font-size:14px;font-variant-numeric:tabular-nums}
 q{quotes:"“" "”"}
 
