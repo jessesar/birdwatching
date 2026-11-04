@@ -34,6 +34,73 @@ const ICONS = {
 const icon = (key) =>
   `<svg class="test-icon" viewBox="0 0 40 40" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${ICONS[key] ?? ""}</svg>`;
 
+// Our own tests on him: questions we ask about ourselves, asked of Pino.
+const OUR_TESTS = [
+  {
+    key: "sleep", name: "His sleep",
+    question: "Does he sleep in one block, or in pieces?",
+    why: "Before electric light, many people slept in two parts, a first and a second sleep with an hour awake in between. Most of us now sleep in one block. His nights pass in minutes of our time; we watch how he spends them.",
+    icon: `<path d="M22 9a12 12 0 1 0 10 17A10 10 0 1 1 22 9z"/><path d="M27 6h5l-5 6h5"/>`,
+  },
+  {
+    key: "rest", name: "Learning to rest",
+    question: "Will he learn that only sleep restores him?",
+    why: "In his town a quick sit-down does nothing for tiredness; only sleep does. We know the feeling of reaching for coffee instead of going to bed. We watch whether he learns the difference.",
+    icon: `<path d="M8 13h24M6 21h28M9 21v10M31 21v10M9 13v8M31 13v8"/>`,
+  },
+  {
+    key: "body", name: "Feeling his body",
+    question: "Does he notice what his body tells him?",
+    why: "Psychologists call it interoception: sensing your own heartbeat, hunger and tiredness. We compare what his body says, his need for rest, with what he thinks.",
+    icon: `<path d="M20 33s-12-7-12-15a6 6 0 0 1 12-2 6 6 0 0 1 12 2c0 8-12 15-12 15z"/><path d="M10 20h5l2-4 3 8 2-4h7"/>`,
+  },
+];
+
+const pct = (x) => `${Math.round(x * 100)}%`;
+const times = (n) => (n === 1 ? "once" : n === 2 ? "twice" : `${n} times`);
+function ourFinding(key, o) {
+  if (!o) return "Watching from now on.";
+  if (key === "sleep") {
+    const s = o.sleep;
+    if (!s?.nights) return "No complete night yet. His first full sleep will show up here.";
+    return `${s.nights === 1 ? "One night" : `${s.nights} nights`} so far. Last time he went to bed at ${s.lastBed} and woke into ${s.lastWake}, his time. ` +
+      `A night takes him about ${Math.round(s.townHours)} hours and us about ${Math.round(s.realMinutes)} minutes. ` +
+      (s.inPieces ? "Some nights came in pieces, like the old first and second sleep." : "So far he sleeps in one block, the way most of us do now.");
+  }
+  if (key === "rest") {
+    const r = o.rest;
+    if (!r?.attempts) return "No daytime rests while worn out seen yet.";
+    return `While worn out he tried to rest during the day ${times(r.attempts)}. ` +
+      (r.helped ? `${r.helped} of those rests helped.` : "None of those rests lowered his need for rest.") +
+      (r.sleeps ? ` Sleep did, ${times(r.sleeps)}.` : "");
+  }
+  const b = o.body;
+  if (!b || b.tiredMoments < 5) return "Not enough of his tired moments seen yet.";
+  return `When his body was most tired, his thoughts mentioned tiredness ${pct(b.saysTiredWhenTired)} of the time.` +
+    (b.restedMoments >= 5 ? ` When he was rested, ${pct(b.saysTiredWhenRested)}.` : " We haven’t seen him rested for long enough yet to compare.");
+}
+
+function ourTests(data) {
+  const o = data.ours;
+  const hours = o?.minutes ? Math.round(o.minutes / 60) : 0;
+  return `<section class="our-tests gutter" aria-labelledby="ours-title">
+  <div class="ours-inner">
+    <h2 id="ours-title">Our tests on him</h2>
+    <p class="ours-intro">He tests his world. We quietly test him, with questions we keep asking about ourselves. We only watch: nothing here ever reaches him.</p>
+    <ul class="ours-cards">
+${OUR_TESTS.map((t) => `      <li class="ourtest" id="our-${t.key}">
+        <svg class="test-icon" viewBox="0 0 40 40" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${t.icon}</svg>
+        <p class="test-name">${esc(t.name)}</p>
+        <p class="claim">${esc(t.question)}</p>
+        <p class="plan">${esc(t.why)}</p>
+        <p class="seen-so-far"><span>what we’ve seen</span>${esc(ourFinding(t.key, o))}</p>
+      </li>`).join("\n")}
+    </ul>
+    <p class="ours-basis">${o?.since ? `From ${hours ? `${hours} hours` : "the first minutes"} of his state, read minute by minute since ${utc(o.since)}.` : "From his state, read minute by minute."}</p>
+  </div>
+</section>`;
+}
+
 // A clear sighting lights a star; a glimmer only makes it glimmer.
 const seenText = (n, g = 0) =>
   n ? (n === 1 ? "seen once" : `seen ${n} times`) : g ? (g === 1 ? "a glimmer" : `${g} glimmers`) : "not yet seen";
@@ -124,15 +191,24 @@ function marks(data) {
     .join("");
 }
 
-// How he feels (the town's own words) and what he needs right now, as thin bars.
-const NEEDS = [["rest", "rest"], ["curiosity", "curiosity"], ["social", "company"], ["expression", "making"], ["quiet", "quiet"]];
+// How he feels (the town's own words) and how he is, as small bars where full
+// is good. Built from his feeling (-1 to 1) and his needs (0 to 1, high = lacking).
+// The same list runs in the page script, so it's kept as plain source text.
+const LEVELS_SRC = `[
+  ["energy", (n) => n.feeling && typeof n.feeling.energy === "number" ? (n.feeling.energy + 1) / 2 : null],
+  ["mood", (n) => n.feeling && typeof n.feeling.mood === "number" ? (n.feeling.mood + 1) / 2 : null],
+  ["rested", (n) => n.needs && typeof n.needs.rest === "number" ? 1 - n.needs.rest : null],
+  ["connected", (n) => n.needs && typeof n.needs.social === "number" ? 1 - n.needs.social : null],
+  ["fulfilled", (n) => n.needs && typeof n.needs.expression === "number" ? 1 - n.needs.expression : null],
+]`;
+const LEVELS = new Function(`return ${LEVELS_SRC}`)();
 function feel(n) {
   const words = n?.feeling?.words;
-  const needs = NEEDS.filter(([k]) => typeof n?.needs?.[k] === "number");
-  if (!words && !needs.length) return "";
+  const levels = LEVELS.map(([label, f]) => [label, f(n ?? {})]).filter(([, v]) => v != null);
+  if (!words && !levels.length) return "";
   return `${words ? `<p class="feeling"><span>feeling</span> <q>${esc(words)}</q></p>` : ""}` +
-    (needs.length ? `<p class="needs-title">what he needs</p><ul class="needs">${needs.map(([k, label]) =>
-      `<li><span>${label}</span><i><b style="width:${Math.round(Math.max(0, Math.min(1, n.needs[k])) * 100)}%"></b></i></li>`).join("")}</ul>` : "");
+    (levels.length ? `<p class="needs-title">how he is</p><ul class="needs">${levels.map(([label, v]) =>
+      `<li${v < 0.25 ? ' class="low"' : v > 0.85 ? ' class="high"' : ""}><span>${label}</span><i><b style="width:${Math.round(Math.max(0, Math.min(1, v)) * 100)}%"></b></i></li>`).join("")}</ul>` : "");
 }
 
 function nowLine(data) {
@@ -267,6 +343,9 @@ ul.needs{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-wrap:nowrap;
 ul.needs li{display:flex;flex-direction:column;align-items:flex-start;gap:7px;font-size:12px;color:var(--ash);white-space:nowrap}
 ul.needs li i{order:-1}
 ul.needs i{display:block;width:58px;height:6px;border-radius:3px;background:rgba(243,239,233,.12);overflow:hidden}
+ul.needs li.low b{background:linear-gradient(90deg,rgba(214,112,92,.5),#d6705c)}
+ul.needs li.high i{box-shadow:0 0 9px 1px rgba(242,196,109,.5)}
+ul.needs li.high b{background:linear-gradient(90deg,#f2c46d,#ffe3a6)}
 ul.needs b{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,rgba(242,196,109,.55),var(--lamp));transition:width 1.2s ease}
 .when{display:block;color:var(--ash);font-size:14px;font-variant-numeric:tabular-nums}
 q{quotes:"“" "”"}
@@ -385,9 +464,22 @@ ol.ours-tests p{margin:4px 0 0;color:#cfc7bd;font-size:15px}
 .coda{margin:56px 0 0;font-size:clamp(20px,2.6vw,25px);line-height:1.4;max-width:34ch;text-wrap:balance}
 .new-sighting{position:fixed;z-index:20;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));font:500 15px var(--text);color:#1a140f;background:var(--lamp);border:0;border-radius:999px;padding:10px 18px;box-shadow:0 6px 30px rgba(242,196,109,.35);cursor:pointer}
 .new-sighting:focus-visible{outline:2px solid var(--ivory);outline-offset:3px}
-footer{max-width:980px;margin:72px auto 0;padding-block:28px 48px;border-top:1px solid var(--rule);color:var(--ash);font-size:14px;display:grid;gap:10px}
-footer p{margin:0;max-width:66ch}
-footer .build{color:var(--ivory);font-size:16px;line-height:1.55;margin-bottom:8px}
+footer{max-width:980px;margin:72px auto 0;padding-block:32px 56px;border-top:1px solid var(--rule);color:var(--ash);font-size:14px;line-height:1.55;display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:40px}
+.foot-col{display:grid;gap:10px;align-content:start;min-width:0}
+.foot-head{font-size:12px;letter-spacing:.04em;color:var(--lamp)}
+.our-tests{max-width:980px;margin:72px auto 0}
+.ours-inner{display:grid;gap:14px}
+.ours-intro{margin:0;color:#cfc7bd;max-width:62ch}
+ul.ours-cards{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+.ourtest{display:grid;gap:12px;align-content:start;padding:22px 22px 24px;border:1px solid var(--rule);border-radius:14px;background:linear-gradient(#15110e,#120e0b)}
+.ourtest .test-icon{color:var(--lamp)}
+.ourtest .test-name{font-weight:600;font-size:15px}
+.ourtest .plan{color:#cfc7bd}
+.seen-so-far{margin:6px 0 0;font-size:16px;line-height:1.5;color:var(--lamp)}
+.seen-so-far>span{display:block;font-size:12px;letter-spacing:.04em;color:var(--ash);margin-bottom:4px}
+.ours-basis{margin:4px 0 0;color:var(--ash);font-size:13px}
+footer p{margin:0}
+footer .build{color:var(--ivory);font-size:15px;line-height:1.55}
 footer .build a{color:var(--lamp);text-decoration-color:rgba(242,196,109,.5)}
 footer a{text-underline-offset:3px}
 
@@ -403,6 +495,7 @@ footer a{text-underline-offset:3px}
   .mark span{font-size:13px}.mark small{display:none}
 }
 @media (max-width:760px){
+  footer,ul.ours-cards{grid-template-columns:1fr;gap:28px}
   .ground-inner{grid-template-columns:1fr}
   .clocks{grid-template-columns:1fr 1fr;gap:20px}
 }
@@ -519,12 +612,24 @@ ${data.tests.map((t) => testItem(t, data)).join("\n")}
   </div>
 </section>
 
+${ourTests(data)}
+
 <footer class="gutter">
-  <p class="build">Birdwatching is open source, and the observatory has room for more instruments. A better way to read his feed, a new measurement, a sharper eye for his tests: come build it with us on <a href="https://github.com/jessesar/birdwatching">GitHub</a>. Issues, ideas and pull requests are all welcome.</p>
-  <p>Watching since ${data.watchingSince ? utc(data.watchingSince) : "now"}, ${data.readings} clock readings so far. Last asked ${utc(data.status?.at)}${data.status && !data.status.answering ? ", and he didn’t answer" : ""}.</p>
-  <p>The claims and plans are Pino’s, from his page. Quotes come from his public feed, unedited. Lines in lamplight are the observatory’s own measurements. A small language model reads each entry, his wants and his memories, and decides which test it is really about. Until it has, or if it can’t, plain keywords stand in and the sighting says “keyword match”. Either can be wrong, so read it and judge. The raw observations are at <a href="/data.json">data.json</a>.</p>
-  <p>Pino, from <a href="https://pinos.world">pinos.world</a>. Pino and his town are made by <a href="https://www.instagram.com/3eyes.iii/">@3eyes.iii</a>.</p>
-  <p>Birdwatching is made by <a href="https://www.instagram.com/jessesar/">@jessesar</a>, who is amazed by the work of @3eyes.iii and thinks Pino is a really cool experiment, worth watching closely. This observatory only watches: it asks his public API no faster than he updates and never writes to him.</p>
+  <div class="foot-col">
+    <p class="foot-head">Build with us</p>
+    <p class="build">Birdwatching is open source, and the observatory has room for more instruments. A better way to read his feed, a new measurement, a sharper eye for his tests: come build it with us on <a href="https://github.com/jessesar/birdwatching">GitHub</a>. Issues, ideas and pull requests are all welcome.</p>
+  </div>
+  <div class="foot-col">
+    <p class="foot-head">How it reads him</p>
+    <p>The claims and plans are Pino’s, from his page; quotes come from his public feed, unedited. Lines in lamplight are the observatory’s own. A language model judges which test an entry is about; until it has, keywords stand in. Either can be wrong, so read and judge.</p>
+    <p>Watching since ${data.watchingSince ? utc(data.watchingSince) : "now"}, ${data.readings} clock readings. Last asked ${utc(data.status?.at)}${data.status && !data.status.answering ? ", and he didn’t answer" : ""}. Raw observations: <a href="/data.json">data.json</a>.</p>
+  </div>
+  <div class="foot-col">
+    <p class="foot-head">Credits</p>
+    <p>Pino, from <a href="https://pinos.world">pinos.world</a>. Pino and his town are made by <a href="https://www.instagram.com/3eyes.iii/">@3eyes.iii</a>.</p>
+    <p>Birdwatching is made by <a href="https://www.instagram.com/jessesar/">@jessesar</a>, who is amazed by the work of @3eyes.iii and thinks Pino is a really cool experiment, worth watching closely.</p>
+    <p>This observatory only watches: it asks his public API no faster than he updates and never writes to him.</p>
+  </div>
 </footer>
 
 <script id="sky-data" type="application/json">${skyData(data)}</script>
@@ -918,13 +1023,13 @@ ${data.tests.map((t) => testItem(t, data)).join("\n")}
   const notice = document.getElementById("new-sighting");
   const seenText = (n, g) => n ? (n === 1 ? "seen once" : "seen " + n + " times") : g ? (g === 1 ? "a glimmer" : g + " glimmers") : "not yet seen";
   const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  const NEEDS = ${JSON.stringify(NEEDS)};
+  const LEVELS = ${LEVELS_SRC};
   function feelHTML(n) {
     const words = n.feeling && n.feeling.words;
-    const needs = NEEDS.filter(([k]) => n.needs && typeof n.needs[k] === "number");
+    const levels = LEVELS.map(([label, f]) => [label, f(n)]).filter(([, v]) => v != null);
     return (words ? '<p class="feeling"><span>feeling</span> <q>' + esc(words) + "</q></p>" : "") +
-      (needs.length ? '<p class="needs-title">what he needs</p><ul class="needs">' + needs.map(([k, label]) =>
-        "<li><span>" + label + '</span><i><b style="width:' + Math.round(Math.max(0, Math.min(1, n.needs[k])) * 100) + '%"></b></i></li>').join("") + "</ul>" : "");
+      (levels.length ? '<p class="needs-title">how he is</p><ul class="needs">' + levels.map(([label, v]) =>
+        "<li" + (v < 0.25 ? ' class="low"' : v > 0.85 ? ' class="high"' : "") + "><span>" + label + '</span><i><b style="width:' + Math.round(Math.max(0, Math.min(1, v)) * 100) + '%"></b></i></li>').join("") + "</ul>" : "");
   }
   async function refresh() {
     let d;

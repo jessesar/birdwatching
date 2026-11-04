@@ -1,10 +1,16 @@
 import { TESTS, tagText, encodeTags, townMinutes, clockRate, timeVerdict, moon } from "./observe.js";
 import { renderPage, timeFinding, clockNote, SITE } from "./page.js";
+import { ourTests } from "./ours.js";
 import { MODEL, judgeMessages, parseJudgement } from "./judge.js";
 
 const API = "https://pinos.world/api/v1";
 const USER_AGENT = "birdwatching/1.0 (read-only; polls on Pino's clock)";
 const CLOCK_WINDOW_MS = 72 * 3600 * 1000;
+const MOMENTS_WINDOW_MS = 72 * 3600 * 1000;
+// The clock speed and our tests read thousands of rows, so they're worked out
+// every ten minutes rather than every minute; that keeps the database reads
+// well inside the free plan.
+const DERIVE_EVERY_MIN = 10;
 const SIGHTINGS_PER_TEST = 12;
 // How much the model reads per run, and how long an entry may wait for it
 // before its keyword tags are taken as final.
@@ -46,6 +52,10 @@ export async function collect(env, when = Date.now()) {
     setMeta(env, "status", { answering: true, at: seenAt }),
     setMeta(env, "now", now),
   ];
+  writes.push(env.DB.prepare(
+    "INSERT OR IGNORE INTO moments (at, real_ms, asleep, town_min, rest, energy, mood, doing, thought) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+  ).bind(now.at, Date.parse(now.at), now.asleep ? 1 : 0, clockReadable ? townMinutes(now.world.day, now.world.time) : null,
+    now.needs?.rest ?? null, now.feeling?.energy ?? null, now.feeling?.mood ?? null, now.doing ?? null, now.thought ?? null));
   if (clockReadable) {
     writes.push(env.DB.prepare(
       "INSERT OR IGNORE INTO clock (at, real_ms, town_day, town_time, town_min, asleep, doing) VALUES (?, ?, ?, ?, ?, ?, ?)"
@@ -166,18 +176,43 @@ const readMeta = async (env, key) => {
   return row ? JSON.parse(row.value) : null;
 };
 
-export async function observations(env, at = Date.now()) {
+function mergeMoments(moments, readings) {
+  const seen = new Set(moments.map((m) => Math.round(m.realMs / 1000)));
+  return [...moments, ...readings.filter((r) => !seen.has(Math.round(r.realMs / 1000)))].sort((a, b) => a.realMs - b.realMs);
+}
+
+// The expensive part: his clock speed and our own tests.
+export async function derive(env, at = Date.now()) {
   const db = env.DB;
-  const [clockRows, watching, now, status, latest] = await Promise.all([
+  const [clockRows, momentRows] = await Promise.all([
     db.prepare("SELECT real_ms, town_min FROM clock WHERE at >= ? ORDER BY at")
       .bind(new Date(at - CLOCK_WINDOW_MS).toISOString()).all(),
-    db.prepare("SELECT MIN(at) AS since, COUNT(*) AS readings FROM clock").first(),
+    db.prepare("SELECT real_ms, asleep, town_min, rest, energy, mood, doing, thought FROM moments WHERE at >= ? ORDER BY at")
+      .bind(new Date(at - MOMENTS_WINDOW_MS).toISOString()).all(),
+  ]);
+  return {
+    clock: clockRate(clockRows.results.map((r) => ({ realMs: r.real_ms, town: r.town_min }))),
+    // Clock readings fill gaps in the moments: each one is an awake moment with a town time.
+    ours: ourTests(mergeMoments(
+      momentRows.results.map((m) => ({
+        realMs: m.real_ms, asleep: Boolean(m.asleep), townMin: m.town_min, rest: m.rest, energy: m.energy, mood: m.mood, doing: m.doing, thought: m.thought,
+      })),
+      clockRows.results.map((r) => ({ realMs: r.real_ms, asleep: false, townMin: r.town_min }))
+    )),
+  };
+}
+
+export async function observations(env, at = Date.now(), derived = null) {
+  const db = env.DB;
+  const { clock, ours } = derived ?? (await derive(env, at));
+  const [watching, now, status, latest] = await Promise.all([
+    // MIN(at) reads one index entry; the highest rowid is the count (rows are never deleted).
+    db.prepare("SELECT (SELECT at FROM clock ORDER BY at LIMIT 1) AS since, (SELECT MAX(rowid) FROM clock) AS readings").first(),
     readMeta(env, "now"),
     readMeta(env, "status"),
     db.prepare("SELECT real_ms, town_min FROM clock ORDER BY at DESC LIMIT 1").first(),
   ]);
 
-  const clock = clockRate(clockRows.results.map((r) => ({ realMs: r.real_ms, town: r.town_min })));
 
   const tests = await Promise.all(
     TESTS.map(async (t) => {
@@ -218,6 +253,7 @@ export async function observations(env, at = Date.now()) {
     // The last time his town clock could be read (not while he sleeps).
     lastReading: latest && { realMs: latest.real_ms, town: latest.town_min },
     realMoon: moon(at),
+    ours,
     tests,
   };
 }
@@ -229,7 +265,12 @@ const SNAPSHOT_TTL_MS = 15 * 1000;
 let cached = null;
 
 export async function snapshot(env, when = Date.now()) {
-  await setMeta(env, "snapshot", await observations(env, when)).run();
+  let derived = new Date(when).getUTCMinutes() % DERIVE_EVERY_MIN === 0 ? null : await readMeta(env, "derived");
+  if (!derived) {
+    derived = await derive(env, when);
+    await setMeta(env, "derived", derived).run();
+  }
+  await setMeta(env, "snapshot", await observations(env, when, derived)).run();
 }
 
 async function current(env) {

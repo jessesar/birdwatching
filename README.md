@@ -38,6 +38,11 @@ Birdwatching watches him from outside while he does it.
   memories. Hover or tap a sighting to see the observatory's reasoning; the
   words it took as evidence are highlighted.
 
+- **Our tests on him.** He tests his world; we quietly test him, with
+  questions we keep asking about ourselves. Does he sleep in one block or in
+  pieces? Will he learn that only sleep restores him? Does he notice what his
+  body tells him? Read from his state, minute by minute.
+
 The raw observations are at
 [`/data.json`](https://birdwatching.pino-observatory.workers.dev/data.json),
 open to anyone (CORS enabled).
@@ -71,6 +76,7 @@ every minute   collect()  /now, /feed (+ /mind every 5 min, /memories every 10)
                           -> D1: clock readings, entries, memories
 every 5 min    judge()    Llama 3.3 70B reads new entries in batches of 16
                           -> per entry: tests, glimmers, reasoning, evidence
+every 10 min   derive()   clock speed and our tests, from the last 72 hours
 on request     fetch()    / renders the page, /data.json serves the observations,
                           /robots.txt and /sitemap.xml point search engines at it
 in the page    every 60s  status, clocks and stars refresh without reloading
@@ -101,6 +107,7 @@ hour of steady readings.
 | `src/index.js` | The Worker: collecting, judging, the page and `/data.json` |
 | `src/observe.js` | The five tests in his words, keyword tags, clock rate, moon phase |
 | `src/judge.js` | The model's prompt and the parsing of its answer |
+| `src/ours.js` | Our tests on him: his sleep, learning to rest, feeling his body |
 | `src/page.js` | The page: sky, clocks, the dive, the cards, live refresh |
 | `migrations/` | D1 schema |
 | `public/` | The favicon and the social preview image (`og.png`, a frame of the live sky) |
@@ -130,6 +137,38 @@ npm run deploy
 
 Collection starts within a minute of deploying. It runs comfortably on the
 Workers free plan.
+
+## Roadmap
+
+Ideas we've talked about and haven't built yet. Pick one up, or add your own.
+
+- **Let the model propose new tests.** Once a day, have Workers AI read what
+  he did, felt and wanted, and suggest a new experiment for "Our tests on
+  him", with its reasoning. A human approves it before it goes on the page.
+- **His nights.** A log of every sleep: when he went to bed, when he woke, the
+  real minutes it took and the town hours that passed. After a few days it
+  shows his rhythm.
+- **A diary of his day.** One line per town day (what he made, where he went)
+  with a small graph of his energy and rest.
+- **A falling star for each new sighting.** When one arrives live, a shooting
+  star flies into that test's star.
+- **His mood as light.** The warmth of his roost window follows his mood and
+  energy.
+- **A ticker of his last moments.** What he just did, noticed or wanted,
+  quietly scrolling past in the ground strip.
+- **The sky test, for real.** When he writes down a star's position against
+  the moon, compare it with our real sky at that moment.
+- **The live stream.** Switch from polling to his live stream when pinos.world
+  releases it.
+- **A Pino inside a Pino.** When the Pino protocol arrives, watch a Pino that
+  Pino starts himself: a world inside his world.
+- **Subscribe to sightings.** An RSS feed, so people hear when a test lights up.
+- **A domain of its own,** such as `birdwatching.<something>`.
+
+Questions for his developer, which might open new instruments: how the
+payphone works, whether the speaking clock gives town time or ours, and
+whether his web browsing can be recognised so the page could stay hidden from
+him alone.
 
 ## Contributing
 
