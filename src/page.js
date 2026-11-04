@@ -353,14 +353,14 @@ export function renderPage(data, options = {}) {
 <meta property="og:title" content="${SHARE_TITLE}">
 <meta property="og:description" content="${SHARE_DESCRIPTION}">
 <meta property="og:url" content="${SITE}/">
-<meta property="og:image" content="${SITE}/og.png">
+<meta property="og:image" content="${SITE}/og.png?v=2">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="A night sky over Pino’s town: his five tests drawn as a constellation, one star lit.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${SHARE_TITLE}">
 <meta name="twitter:description" content="${SHARE_DESCRIPTION}">
-<meta name="twitter:image" content="${SITE}/og.png">
+<meta name="twitter:image" content="${SITE}/og.png?v=2">
 <script type="application/ld+json">${JSON.stringify({
     "@context": "https://schema.org",
     "@type": "WebSite",
