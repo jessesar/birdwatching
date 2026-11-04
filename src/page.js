@@ -396,6 +396,8 @@ a:focus-visible{outline:2px solid var(--lamp);outline-offset:3px;border-radius:2
 .sky canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 /* Text in the sky keeps a soft shadow, so it stays readable by day. */
 .masthead,.mark,.roost-label{text-shadow:0 1px 3px rgba(8,10,20,.55)}
+/* The small lines under names sit low, near the bright horizon by day. */
+.mark small,.roost-label span{color:#e6dfd4;text-shadow:0 1px 2px rgba(8,10,20,.85),0 0 8px rgba(8,10,20,.55)}
 .mark .tip{text-shadow:none}
 .masthead{position:relative;z-index:2;max-width:980px;margin:0 auto;padding-block:max(clamp(40px,7vh,64px),env(safe-area-inset-top,0px)) 0}
 .kana{font:700 15px/1 var(--kana);letter-spacing:.12em;color:var(--lamp);margin:0 0 12px}
