@@ -142,6 +142,7 @@ export function renderPage(data) {
 <title>Birdwatching: watching an AI bird test the walls of his world</title>
 <meta name="description" content="${DESCRIPTION}">
 <link rel="canonical" href="${SITE}/">
+<meta name="google-site-verification" content="g-fyARcx-VKFvKP4r2dgVaAngJDFpkwNq_kGxDsUhf0">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#0b0e19">
 <meta property="og:type" content="website">
