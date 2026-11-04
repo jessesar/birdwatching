@@ -443,7 +443,6 @@ q{quotes:"“" "”"}
 .second{stroke:var(--ash);stroke-width:.9}
 #town .minute,#town .hour,#town .second{stroke:var(--lamp)}
 #town{transition:opacity 1s ease}
-.tiny-pino{filter:drop-shadow(0 .8px 1.1px rgba(0,0,0,.75))}
 .tiny-pino .body{fill:#ece6f4}
 .tiny-pino .line{fill:none;stroke:#d9d0e8;stroke-width:.5;stroke-linecap:round;stroke-linejoin:round}
 .tiny-pino .eye-white{fill:#fff}
