@@ -24,7 +24,9 @@
   // On the Workers paid plan: the heavy calculations every minute, and his status
   // every 15 seconds (as often as his API updates). On the free plan use 10, 30
   // and 60 to keep database reads and requests comfortable.
-  "vars": { "DERIVE_EVERY_MIN": "1", "FEED_TESTS_EVERY_MIN": "1", "STATUS_EVERY_S": "15" },
+  "vars": { "DERIVE_EVERY_MIN": "1", "FEED_TESTS_EVERY_MIN": "1", "STATUS_EVERY_S": "15",
+    // Cloudflare Web Analytics site token (public; it ends up in the page anyway).
+    "WEB_ANALYTICS_TOKEN": "7e274755f77548a28832a166bc2c730f" },
 
   // The favicon and the social preview image; everything else is the Worker.
   "assets": { "directory": "./public" },

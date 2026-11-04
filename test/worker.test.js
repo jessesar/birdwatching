@@ -211,5 +211,5 @@ test("the note under the clocks puts the measured speed in human terms", async (
 test("Web Analytics only appears once a token is set", () => {
   assert.ok(!renderPage(pageData()).includes("cloudflareinsights"));
   const html = renderPage(pageData(), { analyticsToken: "abc123" });
-  assert.ok(html.includes(`<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token":"abc123"}'></script>`));
+  assert.ok(html.includes(`<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token":"abc123"}'></script>`));
 });

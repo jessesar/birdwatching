@@ -336,7 +336,7 @@ const SHARE_DESCRIPTION =
 // options.analyticsToken: Cloudflare Web Analytics (no cookies); left out if unset.
 export function renderPage(data, options = {}) {
   const beacon = options.analyticsToken
-    ? `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='${JSON.stringify({ token: options.analyticsToken }).replace(/'/g, "")}'></script>`
+    ? `<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='${JSON.stringify({ token: options.analyticsToken }).replace(/'/g, "")}'></script>`
     : "";
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Birdwatching: watching an AI bird test the walls of his world</title>
