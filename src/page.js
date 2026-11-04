@@ -400,6 +400,7 @@ a:focus-visible{outline:2px solid var(--lamp);outline-offset:3px;border-radius:2
 /* Text in the sky keeps a soft shadow, so it stays readable by day. */
 .masthead,.mark,.roost-label{text-shadow:0 1px 3px rgba(8,10,20,.55)}
 /* The small lines under names sit low, near the bright horizon by day. */
+.roost-label.awake span{color:var(--lamp)}
 .mark small,.roost-label span{color:#e6dfd4;text-shadow:0 1px 2px rgba(8,10,20,.85),0 0 8px rgba(8,10,20,.55)}
 .mark .tip{text-shadow:none}
 .masthead{position:relative;z-index:2;max-width:980px;margin:0 auto;padding-block:max(clamp(40px,7vh,64px),env(safe-area-inset-top,0px)) 0}
@@ -643,7 +644,7 @@ footer a{text-underline-offset:3px}
   </div>
   <a class="visit" href="https://pinos.world" target="_blank" rel="noopener">Visit Pino in his town</a>
   ${marks(data)}
-  <div class="roost-label" id="roost-label"><b>Pino’s roost</b><span id="roost-state">${data.now?.asleep ? "asleep" : "awake"}</span></div>
+  <div class="roost-label${data.now?.asleep ? "" : " awake"}" id="roost-label"><b>Pino’s roost</b><span id="roost-state">${data.now?.asleep ? "asleep" : "awake"}</span></div>
 </header>
 
 <section class="ground gutter" aria-label="His town now, and his clock beside ours">
@@ -1081,6 +1082,7 @@ ${beacon}
     roostLabel.style.left = roostAt.x + "px";
     roostLabel.style.top = roostAt.y - 8 + "px";
     document.getElementById("roost-state").textContent = D.asleep ? "asleep" : "awake";
+    roostLabel.classList.toggle("awake", !D.asleep);
   }
 
   function frame(t) {
