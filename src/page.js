@@ -391,10 +391,10 @@ h1{font:500 clamp(30px,5.4vw,52px)/1.05 var(--text);letter-spacing:-.015em;margi
 .mark{transition:opacity .6s ease;position:absolute;z-index:2;transform:translate(-50%,14px);text-align:center;text-decoration:none;display:grid;gap:1px;padding:4px 6px;line-height:1.25;white-space:nowrap}
 .mark span{font-weight:600;font-size:14px}
 .mark small{font-size:12px;color:var(--ash)}
-.mark:hover span{color:var(--lamp)}
+.mark:hover>span{color:var(--lamp)}
 .mark .tip{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);width:max-content;max-width:min(240px,70vw);white-space:normal;text-align:left;font-style:normal;font-size:13px;line-height:1.45;color:var(--ivory);background:rgba(13,10,8,.9);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;opacity:0;pointer-events:none;transition:opacity .2s ease}
 .mark .tip-about{display:block;color:#cfc7bd}
-.mark .tip-seen{display:block;margin-top:8px;padding-top:8px;border-top:1px solid var(--rule)}
+.mark .tip-seen{display:block;margin-top:8px;padding-top:8px;border-top:1px solid var(--rule);color:var(--ivory)}
 .mark .tip-when{display:block;color:var(--lamp);font-weight:500;font-size:12px;margin-top:4px}
 .mark.tip-left .tip{left:0;transform:none}
 .mark.tip-right .tip{left:auto;right:0;transform:none}
@@ -1018,22 +1018,24 @@ ${ourTests(data)}
     if (label.textContent !== text) label.textContent = text;
     if (below.textContent !== second) below.textContent = second;
   }
-  // Tiny Pino perches on the tip of a hand of his town clock. Only when his hand
-  // points nearly straight down (within 45 degrees of six o'clock) does he hop
-  // to the other hand; if both point down he waits on the pin. Asleep, he sits on the pin.
+  // Tiny Pino rides the second hand of his town clock, which races round about
+  // every 13 seconds. When it swings nearly straight down (within 45 degrees of
+  // six o'clock) he hops to the minute or hour hand, and jumps back on as soon as
+  // it comes round again. Without a second hand (asleep, or speed not yet known)
+  // he uses the other hands, and the pin when they all point down.
   const tiny = document.getElementById("tiny-pino");
-  const HANDS = { m: 44, h: 28 };
-  let perch = "m", hop = null, shown = null;
+  const HANDS = { s: 48, m: 44, h: 28 };
+  let perch = "pin", hop = null, shown = null;
   const tip = (deg, len) => [Math.sin((deg * Math.PI) / 180) * len, -Math.cos((deg * Math.PI) / 180) * len];
   const upright = (deg) => { const d = ((deg % 360) + 360) % 360; return d < 135 || d > 225; };
   const SIZE = 1.7;
   function placeTiny(mins) {
     if (!tiny) return;
-    const deg = { m: (mins % 60) * 6, h: ((mins / 60) % 12) * 30 };
+    const deg = { s: ((mins * 60) % 60) * 6, m: (mins % 60) * 6, h: ((mins / 60) % 12) * 30 };
     const spot = (p) => (p === "pin" ? [0, -2.6] : tip(deg[p], HANDS[p] - 4));
-    let want = perch;
+    let want;
     if (D.asleep || still) want = "pin";
-    else if (perch === "pin" || !upright(deg[perch])) want = upright(deg.m) ? "m" : upright(deg.h) ? "h" : "pin";
+    else want = (D.rate ? ["s", "m", "h"] : ["m", "h"]).find((p) => upright(deg[p])) ?? "pin";
     const now = performance.now();
     if (want !== perch && !hop) { hop = { from: shown ?? spot(perch), start: now }; perch = want; }
     let [x, y] = spot(perch);
